@@ -1,0 +1,57 @@
+---
+title: "R Mapping Notebook"
+output: html_notebook
+name: "Mark Mitri"
+date: 11 November 2022
+---
+
+### 0. Getting Started
+
+Start by reviewing the slides and R notebooks from Wednesday's mapping lecture.  Our goal today is to build a choropleth map of PA counties showing median household incomes.  (Look at the end of the lab to see a sample target image.)
+
+### 1. Find a county-level shapefile
+
+Now go to the web and find county-level shapefiles that inlude PA counties.  Download the file (likely a zip file), and find the .shp file within it.  Read the shapefile using `st_read()`.
+```{r}
+library(ggplot2)
+library(ggmap)
+library(tidyverse)
+library(sf)
+library(mapview)
+```
+
+```{r}
+marylandCounties <- st_read("C:\\Users\\MitriDell\\Documents\\Textbooks\\Senior - Fall 2022\\CSE 160\\Labs\\Final Project\\P5_3_2_counties_all_md.shp")
+```
+
+### 2. Limit it to PA counties
+
+We only want to plot counties in PA.  So if the shapefile you have found is for more than PA, you'll need to extract only the PA data.
+After extraction, how many counties do you have?  Does it match the correct number of counties for PA?
+
+```{r}
+#N/a
+```
+
+### 3. Plot PA counties
+
+Use ggplot() and geom_sf() to plot the basic county outlines for PA.
+```{r}
+m0 <- ggplot(data=marylandCounties$geometry)
+m1 <- m0 + geom_sf()
+m1
+```
+
+```{r}
+dataset <- read.csv("Traffic_Violations.csv", header = TRUE)
+```
+
+```{r}
+plot(st_geometry(marylandCounties), xlim=c(0,42), ylim=c(-152,40))
+points(x=mergedData$Latitude, y=mergedData$Longitude, col="red", cex=.5)
+```
+
+```{r}
+mapview(marylandCounties, xcol = mergedData$Longitude, ycol = mergedData$Latitude)
+
+```

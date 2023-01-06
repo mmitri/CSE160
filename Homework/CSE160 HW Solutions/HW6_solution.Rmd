@@ -1,0 +1,82 @@
+---
+title: "HW6"
+author: "Your name"
+date: "today"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Consider the problem of time series analysis for parking data.  At the webpage https://archive.ics.uci.edu/ml/datasets/Parking+Birmingham you'll find a dataset about parking utilization.  You'll need to download the zip file and unzip it locally.
+
+```{r}
+parking <- read.csv("~/Dropbox/Courses/CSE160/data/parkingdata.csv")
+parking$SystemCodeNumber <- factor(parking$SystemCodeNumber)
+parking$LastDate <- as.Date(parking$LastUpdated)
+parking$LastTime <- strptime(parking$LastUpdated, "%Y-%m-%d %H:%M:%S")
+str(parking)
+levels(parking$SystemCodeNumber)
+```
+
+After you have read in the data, and examined it, you'll find that it contains occupancy numbers for multiple locations.  Let's work with just one location: 
+SystemCodeNumber == "BHMBCCMKT01" so generate a new dataframe by extracting the subset for this location.  (2 points)
+
+Let's build a model of regression, to predict the next occupancy level reading.  Using the second time series analysis R notebook as reference, create a dataframe with multiple attributes (3 points).  Note that this dataset is quite different, and so not all of the attributes we saw in class could be created here.
+
+```{r}
+location1 <- parking[parking$SystemCodeNumber == "BHMBCCMKT01",]
+
+parkingdf <- data.frame(Occupancy = location1$Occupancy, LastDate = location1$LastDate, LastTime = location1$LastTime)
+
+parkingdf$Prior1[1] <- NA
+for (i in 2:length(parkingdf$Occupancy)) {
+  parkingdf$Prior1[i] <- parkingdf$Occupancy[i-1]
+}
+
+for (i in 1:18) {
+  parkingdf$priorday[i] <- NA
+}
+for (i in 19:length(parkingdf$Occupancy)) {
+  parkingdf$priorday[i] <- parkingdf$Occupancy[i-18]
+}
+
+parkingdf$id <- as.integer(rownames(parkingdf))
+
+#rows <- dim(parkingdf)[1]
+#rows
+
+#train <- parkingdf[19:floor(rows*.8),]
+#test <- parkingdf[-(1:floor(rows*.8)),]
+
+#dim(train)
+#dim(test)
+
+
+```
+
+Build a regression model based on those attributes (3 points) and evaluate it using the simple measures we saw in class (2 points).  Are you able to get 90% correlation?
+
+```{r}
+model <- glm(Occupancy ~ Prior1 + priorday + id, data=train)
+summary(model)
+pred.value <- predict(model, test)
+
+# make actuals_predicteds dataframe.
+actuals_preds <- data.frame(cbind(actuals=test$Occupancy, predicteds=pred.value))  
+correlation_accuracy <- cor(actuals_preds$actuals, actuals_preds$predicteds)  # 63.7%
+correlation_accuracy # want as high as possible
+
+#head(actuals_preds)
+
+mape <- mean(abs((actuals_preds$predicteds - actuals_preds$actuals))/actuals_preds$actuals)
+mape # want as low as possible
+mse <- mean((test$Occupancy-pred.value)^2)
+mse # want as low as possible
+
+# Yes we are able to get .90 correlation
+```
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

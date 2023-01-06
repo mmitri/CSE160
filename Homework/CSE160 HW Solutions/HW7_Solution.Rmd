@@ -1,0 +1,86 @@
+---
+title: "HW7"
+author: "Eashan Adhikarla"
+date: "Oct 28, 2022"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Consider a old-fashioned mail-order (only) catalog company that traditionally sends large holiday catalogs to two million past and one million potential customers. This is an expensive process, as the printing and mailing costs \$3 for each catalog, and typically only 6% of existing customers and 2% of potential customers make a purchase. The average sale to an existing customer nets the company \$55 in profit (i.e., after all expenses), while the average sale to a new customer is smaller and nets the company $40 in profit. Delivery of a catalog without a sale will result, of course, in an expense.
+
+a, 4 points) What is the expected overall profit for this company to continue with their traditional plan?
+
+```{r}
+# YOUR ANSWER HERE
+
+# Past customers: 2,000,000
+# Percent of past customer purchase: 0.06
+# Avg sale profit past customer: 55
+
+# Potential customers: 1,000,000 
+# Percent of potential customer purchase: 0.02
+# Avg sale profit potential customer: 40
+
+# Printing cost: $3 per
+# Profit from past customer: Pr(x)*vr - [1-Pr(x)]*vnr
+
+
+
+PastCustProfit <- ((0.06*2000000) * 55) - (((1-0.06)*2000000)*3)
+
+# Profit from potential customer: 
+PotentialCustProfit <- ((0.02*1000000) * 40) - (((1-0.02)*1000000)*3)
+
+# Expected overall profit
+OverallProfit <- PastCustProfit + PotentialCustProfit
+OverallProfit
+```
+
+The company's data analytics department trained a model to predict (Y/N) who will make a holiday purchase from this catalog resulting in the following confusion matrices:
+
+For existing customers
+	p	n
+Y	4	4
+N	2	90
+
+and
+
+For potential customers
+	p	n
+Y	2	12
+N	0	86
+
+b, 6 points) You are tasked to answer the question of whether the company would make more money this season by only sending catalogs to the prospects that are predicted to purchase. Explain your reasoning by clearly showing your work as well as your final answer.  
+
+```{r}
+# YOUR ANSWER HERE
+
+# Calculate number of customers that are marketed to
+old_customer_n = 2000000 * .08
+new_customer_n = 1000000 * .14
+
+# Make new probabilities of purchasing
+prob_old_customer = 4 / 8
+prob_new_customer = 2 / 14
+
+# Calculate customers that buy the catalog, and multiply by revenue per customer
+# We add 3 to profit per customer to remove the $3 in mailing costs
+old_customers_revenue = (prob_old_customer * old_customer_n) * 58
+new_customers_revenue = (prob_new_customer * new_customer_n) * 43
+
+# Calculate the cost of sending to a customer
+cost_send = 3 * (old_customer_n + new_customer_n)
+
+# Calculate profit and print
+profit = old_customers_revenue + new_customers_revenue - cost_send
+paste("Overall expected profit $", round(profit, 2))
+
+print("Clearly the second method makes more money. The expected profit is now positive while the old method was losing money. Even though we are mailing less people, we loose a lot less money on non-responses.")
+```
+
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

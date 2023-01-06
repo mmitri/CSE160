@@ -1,0 +1,207 @@
+---
+title: "Handling Missing Values Notebook"
+output: html_notebook
+---
+
+As you saw in an earlier homework, some items in the titanic dataset are missing or need cleaning.  In this lab exercise, we will consider multiple methods for cleaning, and compare their impact on performance.
+
+Methods include: 
+- do nothing, when possible.
+- eliminate all rows with NA
+- replace NA with mean
+- replace NA with median
+- replace NA with prediction from a model for that attribute
+
+We will compare the impact of those methods on the generalization performance of decision trees, logistic regression, and k-nearest neighbors.  (Normally we would do this using a validation set, so that we could use the best approach to predict on the test set, but we won't bother today.)
+
+First, we load libraries and data and do simple cleansing that we did in a prior lab.
+
+```{r}
+library(rpart)
+library(kknn)
+
+# read in data, allow string conversion to factors
+train<-read.csv("http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTrain.csv", as.is = FALSE)
+test<-read.csv("http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTest.csv", as.is = FALSE)
+
+# simply cleanse age and fare - is what we did previously
+train$age <- round(train$age,0)
+train$fare <- round(train$fare,0)
+test$age <- round(test$age,0)
+test$fare <- round(test$fare,0)
+
+train$survived <- as.factor(train$survived) # to force classification instead of regression
+test$survived <- as.factor(test$survived)
+
+train$sex <- as.factor(train$sex)
+train$pclass <- as.factor(train$pclass)
+train$embarked <- as.factor(train$embarked)
+
+test$sex <- as.factor(test$sex)
+test$pclass <- as.factor(test$pclass)
+test$embarked <- as.factor(test$embarked)
+```
+
+Now we can truly start cleaning.  Let us start with fare.
+
+There is one data point in the training data that is NA.  Replace it with the median fare value. There are also multiple outliers (3 in training, 1 in test) with values over 500.  Replace them also with median fare.
+
+```{r}
+medianFare <- median(train$fare, na.rm=TRUE)
+train$fare[is.na(train$fare)] <- medianFare
+train$fare[train$fare > 500] <- medianFare
+test$fare[test$fare > 500] <- medianFare
+```
+
+Now we can move on to age, which has many NA in both training and testing sets.
+
+Start by creating a new training set that only includes rows that are not NA in any of the columns we care about (survived, pclass, age, fare, sex, embarked).
+
+Since age is numeric, let's use linear regression, trained on this new dataset without NAs to predict the values that should replace the NAs.  We will need this model to predict values for the training data NAs and for the test data NAs.
+
+Then calculate the mean and median of ages in the training set.
+
+Create new columns in the training set to hold the original age value (if not NA), and then the computed mean, median, and predicted result.  HINT: use ifelse() to operate on vectors to test for NA and use new value if NA, and original value if not NA.
+
+So at the end of this block, we have training data with three new columns, and test data with three new columns.
+
+Note that the glm() call may generate some warnings about "prediction from a rank-deficient fit may be misleading" which we can ignore.
+
+```{r}
+newTrain <- train[ (!is.na(train$pclass)) & (!is.na(train$age)) & (!is.na(train$fare)) & (!is.na(train$survived)) & (!is.na(train$sex)) & (!is.na(train$embarked)), ]
+
+predictNA <- glm(age ~ pclass + fare + survived + sex + embarked, data = newTrain)
+vpred <- predict(predictNA, test)
+
+predictNA2 <- glm(age ~ pclass + fare + survived + sex + embarked, data = test)
+vpred2 <- predict(predictNA2, test)
+
+meanAgeTrain <- mean(train$age, na.rm=TRUE)
+medianAgeTrain <- median(train$age, na.rm=TRUE)
+
+train$meanAge <- ifelse(is.na(train$age), meanAgeTrain, train$age)
+train$medianAge <- ifelse(is.na(train$age), medianAgeTrain, train$age)
+train$predictAge <- ifelse(is.na(train$age), vpred, train$age)
+
+meanAgeTest <- mean(test$age, na.rm=TRUE)
+medianAgeTest <- median(test$age, na.rm=TRUE)
+
+test$meanAge <- ifelse(is.na(test$age), meanAgeTest, test$age)
+test$medianAge <- ifelse(is.na(test$age), medianAgeTest, test$age)
+test$predictAge <- ifelse(is.na(test$age), vpred2, test$age)
+```
+
+Now build five different decision tree models (original data, NA-omitted data, mean ages, median ages, and predicted ages).
+
+```{r}
+tree1 <- rpart(survived ~ age + pclass + sex + fare + embarked, data = newTrain, method = "class")
+tree2 <- rpart(survived ~ age + pclass + sex + fare + embarked, data = train, method = "class")
+tree3 <- rpart(survived ~ medianAge + pclass + sex + fare + embarked, data = train, method = "class")
+tree4 <- rpart(survived ~ meanAge + pclass + sex + fare + embarked, data = train, method = "class")
+tree5 <- rpart(survived ~ predictAge + pclass + sex + fare + embarked, data = train, method = "class")
+```
+
+Do the same for logistic regression.
+
+```{r}
+log1 <- glm(survived ~ pclass + fare + age + sex + embarked, data = newTrain, family = binomial)
+log2 <- glm(survived ~ pclass + fare + age + sex + embarked, data = train, family = binomial)
+log3 <- glm(survived ~ pclass + fare + medianAge + sex + embarked, data = train, family = binomial)
+log4 <- glm(survived ~ pclass + fare + meanAge + sex + embarked, data = train, family = binomial)
+log5 <- glm(survived ~ pclass + fare + predictAge + sex + embarked, data = train, family = binomial)
+```
+
+Do the same for K-Nearest Neighbor.
+
+```{r}
+knn1 <- kknn(survived ~ pclass + fare + age + sex + embarked, newTrain, test, distance = 2)
+knn2 <- kknn(survived ~ pclass + fare + age + sex + embarked, train, test, distance = 2)
+knn3 <- kknn(survived ~ pclass + fare + medianAge + sex + embarked, train, test, distance = 2)
+knn4 <- kknn(survived ~ pclass + fare + meanAge + sex + embarked, train, test, distance = 2)
+knn5 <- kknn(survived ~ pclass + fare + predictAge + sex + embarked, train, test, distance = 2)
+```
+Now calculate and print out the test set accuracy for each of the three models (decision trees, logistic regression, and k-nearest neighbor).
+
+Note that kknn() won't bother to make predictions if it has NA values, and glm() may generate warnings but should still produce useful predictions.
+
+Block for Accuracy of Tree Model
+```{r}
+tree1Pred <- predict(tree1, test, type = 'class')
+tree1Acc <- mean(tree1Pred == test$survived)
+
+tree2Pred <- predict(tree2, test, type = 'class')
+tree2Acc <- mean(tree2Pred == test$survived)
+
+tree3Pred <- predict(tree3, test, type = 'class')
+tree3Acc <- mean(tree3Pred == test$survived)
+
+tree4Pred <- predict(tree4, test, type = 'class')
+tree4Acc <- mean(tree4Pred == test$survived)
+
+tree5Pred <- predict(tree5, test, type = 'class')
+tree5Acc <- mean(tree5Pred == test$survived)
+```
+
+Block for Accuracy of Logistic Regression model
+```{r}
+glm1Pred <- predict(log1, test)
+glm1Pred <- ifelse(glm1Pred > 0.5, 1, 0)
+glm1Pred <- table(test$survived, glm1Pred)
+glm1Acc <- sum(diag(glm1Pred)/sum(glm1Pred))
+
+glm2Pred <- predict(log2, test)
+glm2Pred <- ifelse(glm2Pred > 0.5, 1, 0)
+glm2Pred <- table(test$survived, glm2Pred)
+glm2Acc <- sum(diag(glm2Pred)/sum(glm2Pred))
+
+glm3Pred <- predict(log3, test)
+glm3Pred <- ifelse(glm3Pred > 0.5, 1, 0)
+glm3Pred <- table(test$survived, glm3Pred)
+glm3Acc <- sum(diag(glm3Pred)/sum(glm3Pred))
+
+glm4Pred <- predict(log4, test)
+glm4Pred <- ifelse(glm4Pred > 0.5, 1, 0)
+glm4Pred <- table(test$survived, glm4Pred)
+glm4Acc <- sum(diag(glm4Pred)/sum(glm4Pred))
+
+glm5Pred <- predict(log5, test)
+glm5Pred <- ifelse(glm5Pred > 0.5, 1, 0)
+glm5Pred <- table(test$survived, glm5Pred)
+glm5Acc <- sum(diag(glm5Pred)/sum(glm5Pred))
+```
+
+Block for Accuracy of kknn Model
+```{r}
+fit3<-fitted(knn3)
+knn3Pred <- table(test$survived, fit3)
+knn3Acc <- sum(diag(knn3Pred)/sum(knn3Pred))
+
+fit4<-fitted(knn4)
+knn4Pred <- table(test$survived, fit4)
+knn4Acc <- sum(diag(knn4Pred)/sum(knn4Pred))
+
+fit5<-fitted(knn5)
+knn5Pred <- table(test$survived, fit5)
+knn5Acc <- sum(diag(knn5Pred)/sum(knn5Pred))
+
+fit1<-fitted(knn1)
+knn1Pred <- table(test$survived[1:217], fit1)
+knn1Acc <- sum(diag(knn1Pred)/sum(knn1Pred))
+
+fit2<-fitted(knn2)
+knn2Pred <- table(test$survived[1:217], fit2)
+knn2Acc <- sum(diag(knn2Pred)/sum(knn2Pred))
+```
+
+Which cleaning method was the best for each model?  Is it consistent across models? 
+```{r}
+kknnReg <- c(knn1Acc, knn2Acc, knn3Acc, knn4Acc, knn5Acc)
+treeReg<- c(tree1Acc, tree2Acc, tree3Acc, tree4Acc, tree5Acc)
+logReg <- c(glm1Acc, glm2Acc, glm3Acc, glm4Acc, glm5Acc)
+rowname <- c("N/a Removed", "Old Data", "MedianAge", "MeanAge", "PredictedAge")
+results <- data.frame(kknnReg, treeReg, logReg)
+rownames(results) <- rowname
+results
+
+# Most of the models were pretty consistent all across. The best result came from Log. Regression with PredictedAge as 76.6%
+```

@@ -1,0 +1,218 @@
+---
+title: "Final Project Import Data & Cleaning"
+output: html_notebook
+---
+  
+```{r}
+# read a local csv into a variable
+dataset <- read.csv("Traffic_Violations.csv", header = TRUE)
+dataset
+```
+
+```{r}
+# Remove columns that are not relevant to the data we want to use
+TrafficDF <- subset(dataset, select = c("Violation.Type", "Color", "Make", "Model", "VehicleType", "Year"))
+
+# This is done to avoid dropping a row that has a non-meaningful null value
+# Set all empty cells to NA
+TrafficDF[TrafficDF=="" | TrafficDF=="N/A"] <- NA
+# Remove all cells with NA
+TrafficDF<-na.omit(TrafficDF)
+# Convert Citation to 1 (yes there is a violation) and Warning to 0
+TrafficDF$Class <- ifelse(TrafficDF$Violation.Type == "Citation", 1, 0)
+# Drop Violation.Type column
+TrafficDF$Violation.Type <- NULL
+```
+
+```{r}
+# For the simplicity, we will choose car whose year ranges from 1990 to 2021
+TrafficDF$Year <- as.numeric(TrafficDF$Year)
+TrafficDF <- TrafficDF[TrafficDF$Year >= 1990 & TrafficDF$Year < 2022, ]
+TrafficDF <- TrafficDF[!TrafficDF$VehicleType %in% names(which(table(TrafficDF$VehicleType) < 10)), ]
+
+# Since Camouflage and Chrome are outliers, we will drop them
+TrafficDF<-subset(TrafficDF, Color!="CAMOUFLAGE" & Color!="CHROME")
+```
+
+
+```{r}
+# CLEAN CAR MAKE DATA
+TrafficDF$Make[TrafficDF$Make %in% c("TOYT","TOYO","TOY","TOYOT","TOYTA")] <- "TOYOTA"
+TrafficDF$Make[TrafficDF$Make == "HOND"] <- "HONDA"
+TrafficDF$Make[TrafficDF$Make %in% c("CHEV", "CHEVY","CHEVORLET")] <- "CHEVROLET"
+TrafficDF$Make[TrafficDF$Make %in% c("NISS","NISSIAN")] <- "NISSAN"
+TrafficDF$Make[TrafficDF$Make %in% c("MERZ", "MERC","MERCEDEZ","MERCEDES BENZ")] <- "MERCEDES"
+TrafficDF$Make[TrafficDF$Make == "ACUR"] <- "ACURA"
+TrafficDF$Make[TrafficDF$Make == "DODG"] <- "DODGE"
+TrafficDF$Make[TrafficDF$Make %in% c("CHRY","CHRYS","CHRYSTLER")] <- "CHRYSLER"
+TrafficDF$Make[TrafficDF$Make %in% c("HYUN","HYUND","HYUNDIA")] <- "HYUNDAI"
+TrafficDF$Make[TrafficDF$Make %in% c("SUBA","SUBU","SUB")] <- "SUBARU"
+TrafficDF$Make[TrafficDF$Make %in% c("VOLK", "VW", "VOLKS", "VOLKSWAGEN") ] <- "VOLKSWAGON"
+TrafficDF$Make[TrafficDF$Make %in% c("INFI", "INFINITY")] <- "INFINITI"
+TrafficDF$Make[TrafficDF$Make %in% c("CADI","CADILAC")] <- "CADILLAC"
+TrafficDF$Make[TrafficDF$Make %in% c("MITS","MITZ")] <- "MITSUBISHI"
+TrafficDF$Make[TrafficDF$Make == "MAZD"] <- "MAZDA"
+TrafficDF$Make[TrafficDF$Make %in% c("LEXS", "LEXU","LEX")] <- "LEXUS"
+TrafficDF$Make[TrafficDF$Make %in% c("VOLV")] <- "VOLVO"
+TrafficDF$Make[TrafficDF$Make %in% c("PONT")] <- "PONTIAC"
+TrafficDF$Make[TrafficDF$Make %in% c("MINI")] <- "MINI COOPER"
+TrafficDF$Make[TrafficDF$Make %in% c("LINC")] <- "LINCOLN"
+TrafficDF$Make[TrafficDF$Make %in% c("BUIC")] <- "BUICK"
+TrafficDF$Make[TrafficDF$Make %in% c("SATU", "STRN")] <- "SATURN"
+TrafficDF$Make[TrafficDF$Make %in% c("LNDR", "LANDROVER")] <- "LAND ROVER"
+TrafficDF$Make[TrafficDF$Make %in% c("PORS")] <- "PORSCHE"
+TrafficDF$Make[TrafficDF$Make %in% c("INTL")] <- "INTERNATIONAL"
+TrafficDF$Make[TrafficDF$Make %in% c("ISUZ","ISU")] <- "ISUZU"
+TrafficDF$Make[TrafficDF$Make %in% c("OLDSMOBILE")] <- "OLDS"
+TrafficDF$Make[TrafficDF$Make %in% c("SCIO")] <- "SCION"
+TrafficDF$Make[TrafficDF$Make %in% c("SUZU", "SUZI")] <- "SUZUKI"
+TrafficDF$Make[TrafficDF$Make %in% c("JAGU")] <- "JAGUAR"
+TrafficDF$Make[TrafficDF$Make %in% c("FRHT")] <- "FREIGHTLINER"
+TrafficDF$Make[TrafficDF$Make %in% c("PLYM")] <- "PLYMOUTH"
+```
+
+
+```{r}
+# CLEANING CAR MAKE
+# Get top 30 most common car make
+tab <- table(TrafficDF$Make)
+tab <- tab[order(tab,decreasing = TRUE)][1:30]
+common_car_make <- names(tab)
+# Select rows that have cars with common make
+TrafficDF <- TrafficDF[TrafficDF$Make %in% common_car_make,]
+```
+
+```{r}
+# CLEANING CAR MODEL
+# Get top 100 most common car model
+tab <- table(TrafficDF$Model)
+tab <- tab[order(tab,decreasing = TRUE)][1:100]
+common_car_model <- names(tab)
+# Select rows that have cars with common make
+TrafficDF <- TrafficDF[TrafficDF$Model %in% common_car_model,]
+```
+
+
+```{r}
+# Choose 100,000 rows to use only
+df <- TrafficDF[1:3000,]
+# To avoid the error factor has new levels, remove rows with VehicleType that occurs less than 10 times
+df <- df[!df$VehicleType %in% names(which(table(df$VehicleType) < 10)), ]
+```
+
+```{r}
+# Naive-Bayes classification on predicting citation
+# based on columns 29-33, using e1071 from HW8
+library(e1071)
+library(dplyr)
+library(ggplot2)
+
+# Set the seed for reproducibility
+set.seed(88)
+
+# Empty vectors to concatenate performance measures to
+precisionVec <- vector()
+recallVec <- vector()
+fMeasureVec <- vector()
+accuracyVec <- vector()
+
+# Create another dataframe of just the target and the variables
+naiveViolation <- df
+# Convert dataframe to numerical values
+naiveViolation <- data.matrix(naiveViolation)
+# Convert atomic vector to dataframe
+naiveViolation <- as.data.frame(naiveViolation)
+
+# Splitting the data into train and test based on 80/20 split
+ind <- sample(2, nrow(naiveViolation), replace = T, prob = c(0.8, 0.2))
+train <- naiveViolation[ind == 1,]
+test <- naiveViolation[ind == 2,]
+
+# Naive Bayes model predicting Violation Type based on all of the variables, using the training set
+model <- naiveBayes(Class ~ ., data = train, usekernel = T)
+
+
+p <- predict(model, test)
+tab <- table(p, test$Class)
+tab
+
+# Get the performance measures
+precision <- tab[1,1] / sum(tab[1,]) # Precision = TP / (TP + FP)
+recall <- tab[1,1] / sum(tab[,1]) # Recall = TP / (TP + FN)
+fMeasure <- 2 * precision * recall / (precision + recall)
+accuracy <- sum(diag(tab))/sum(tab)
+  
+# Concatenate newest values of perf measures
+precisionVec <- c(precisionVec, precision)
+recallVec <- c(recallVec, recall)
+fMeasureVec <- c(fMeasureVec, fMeasure)
+accuracyVec <- c(accuracyVec, accuracy)
+
+paste("Precison: " , precisionVec, ", Recall: ", recallVec, ", fMeasure: ", fMeasureVec, ", Accuracy: ", accuracyVec)
+```
+
+```{r}
+# Load Naive Bayes library
+library(e1071)
+
+# Create a vector to store the accuracy, precision, and recall for each fold
+accuracy <- vector()
+precision <- vector()
+recall <- vector()
+fmeasure <- vector()
+
+# Perform 10 fold cross validation
+for(i in 1:10){
+    # Segement data by fold using the which() function 
+    testIndexes <- which(folds==i,arr.ind=TRUE)
+    testData <- df[testIndexes, ]
+    trainData <- df[-testIndexes, ]
+    # Train model on trainData by using the first 9 columns to predict the fifth
+    classifier <- naiveBayes(Class ~ ., trainData)
+    # Predict on testData
+    pred <- predict(classifier, testData)
+    # Calculate the accuracy, precision, and recall for the current fold
+    accuracy[i] <- sum(diag(table(pred, testData$Class)))/sum(table(pred, testData$Class))
+    precision[i] <- table(pred, testData$Class)[4]/sum(table(pred, testData$Class)[4], table(pred, testData$Class)[3])
+    recall[i] <- table(pred, testData$Class)[4]/sum(table(pred, testData$Class)[4], table(pred, testData$Class)[2])
+    fmeasure[i] <- 2*precision[i]*recall[i]/(precision[i]+recall[i])
+}
+```
+
+```{r}
+# Print out evaluation metrics
+paste("Average Accuracy:", mean(accuracy)) 
+paste("Average Precision:", mean(precision, na.rm = TRUE)) 
+paste("Average Recall:", mean(recall, na.rm = TRUE)) 
+paste("Average F-Measure: ", mean(fmeasure, na.rm = TRUE))
+# paste("Average ROC: ", mean(auc))
+```
+
+```{r}
+library(caTools)
+library(ROCR)
+
+set.seed(88) # so that randomized splits are repeatable
+naiveViolation$Violation <- as.factor(naiveViolation$Class)
+naiveViolation <- na.omit(naiveViolation)
+split <- sample.split(naiveViolation$Class, SplitRatio = 0.8)
+train <- subset(naiveViolation, split == TRUE)
+test <- subset(naiveViolation, split == FALSE)
+
+glm.fit <- glm(Class ~ ., data = train, family = binomial)
+
+# Use the model to make predictions on the test set
+glm.probs <- predict(glm.fit, newdata=test, type="response")
+
+logisticPredROC <- prediction(glm.probs, test$Class)
+logisticPerfROC <- performance(logisticPredROC, 'tpr', 'fpr')
+#plot(logisticPerfROC, col="blue", text.adj = c(-0.2,1.7))
+
+classifier <- naiveBayes(Class ~., data=train)
+pred = predict(classifier, test, type="raw")
+
+bayesPredROC <- prediction(pred[,2], test$Class)
+bayesPerfROC <- performance(bayesPredROC, 'tpr', 'fpr')
+plot(bayesPerfROC, col="red", text.adj = c(-0.2, 1.7), main = "ROC Curve: Naive Bayes")
+abline(coef = c(0, 1))
+```

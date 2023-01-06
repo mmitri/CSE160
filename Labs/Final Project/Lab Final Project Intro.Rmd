@@ -1,0 +1,98 @@
+---
+title: "Final Project Start"
+output: html_notebook
+---
+
+Welcome to your final project!
+
+## 1. Join your group
+
+If you have not already done so, look on Piazza for the post that has your project teams listed and find out what group you are in.  Move to the table corresponding to your group number.
+
+## 2. Introduce yourself.  
+
+Share with your group something about yourself as you did with the class at large at the beginning of the semester.  (Yes, this should be a noisy lab!)
+
+Write down the members of your group.
+```{}
+Marc Hamati, Moustafa Gomaa, Hana Dinh, Layan Suleiman, Mark Mitri, Troy Rothstein
+```
+
+## 3. Share contact info.
+
+Share some easy means to contact each other (email, slack group, groupme, cell phone numbers, etc.).  Whatever works well for your group as you'll need to stay in touch.
+
+## 4. How unique?
+
+Can each person share something about themselves that is different from everyone else in the group?
+
+What was your unique item?
+```{}
+Marc has two siblings and he is the youngest. Hana is from vietnam. Layan has two brothers, but she is the oldest. Mark is taking a pilot flying class at Lehigh. 
+```
+
+## 5. Family influence
+
+Share with the group one characteristic you received from your family that you want to keep, and which one do you wish you could change?
+
+What were your answers?
+```{}
+Layan wants to improve her family trait of being late. Mark wants to improve on planning for events. Hana wants to say "I love you" more. Marc wants to improve on wasting less food from the supermarket. Hana and Marc wants to save more money. Layan wants to contine the tradition of passing on culture and language. Mark wants to keep the strong family relationship.
+```
+
+## 6. Old and young
+
+Who is the oldest in the group?  Who is the youngest?
+
+What were the answers?
+```{}
+Layan is the youngest as the sophomore. Mark is the oldest as the senior.
+```
+
+## 7. Five commonalities
+
+Find five traits, interests, or experiences that are common across your group!  Avoid trivialities (like student at Lehigh, ha ha).
+
+What were the answers?
+```{}
+We have all traveled outside the U.S. We all have ethnicities other than U.S. We all play a sport. We are all in the school of engineering. We all took CSE 007
+```
+
+## 8. Read the project description
+
+You'll find the high level project description at the bottom of our CourseSite page.
+
+As you can see there, you need to decide on a data science project that utilizes the activities you have been learning in class.  So be creative -- imagine building a model that is useful to someone!  Creating models of data is core to what we do, but you'll also need to do at least one other substantive activity (perhaps visualization, or data cleaning, etc.).
+
+## 9. Data
+
+But what data to use?  That's always one of the biggest questions.  I strongly discourage collecting your own data as it is usually too big of a job.  So where can you find data?  Back in the data.world lab, I mentioned some great sources of data:
+
+- Jeremy Singer-Vine's [Data Is Plural](https://data-is-plural.com/) newsletter of useful/curious datasets. 
+- The U.S. Government's open data at [data.gov](https://data.gov/).
+- [Google's Dataset Search](https://datasetsearch.research.google.com/).
+- The data-sharing social network and analysis environment for data scientists at [data.world](https://data.world/).
+- [New York City's OpenData](https://opendata.cityofnewyork.us/)
+
+You are not limited to these sources, but I'm sure you can find interesting data within them.  Why not explore each of them (perhaps one student per data source) for a few minutes to see what interesting things each of you can find.
+
+## 10. Decide on a project
+
+Your first project deliverable is a project description (as described on CourseSite) that one of you will need to post as a response to the obvious place in Piazza.  You'll need to think carefully about the realistic task and imagine a customer who would value the results of your task.  You'll need to understand the data you have selected (and produce a short data biography to demonstrate it).  Imagine exactly how you will model it (e.g., the "formula" that you would use in a model) so that you are clear about what you are predicting.  How will you evaluate the performance of your model?
+
+You might be able to complete all of this by today.
+
+CW7 will be the grade for posting your description.  Due Thursday October 20.
+
+CW8 will be for commenting on at least two other group project postings.  Due Sunday October 23. 
+
+## 11. Project Ideas
+
+```{}
+1. Analyzing historical weather data to predict the outcome of the annual Le-Laf football game.
+2. Is there a higher rate of car crashes around college campuses?
+3. Predict the popularity of a TV show based on actor/actresses, channel ratings, funds.
+4. Is there a correlation between birthdate and college success?
+5. Correlation between make and model of a car and traffic violations?
+  (For maryland: https://data.montgomerycountymd.gov/Public-Safety/Traffic-Violations/4mse-ku6q)
+```

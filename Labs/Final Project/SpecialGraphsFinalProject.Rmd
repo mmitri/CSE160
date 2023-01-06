@@ -1,0 +1,287 @@
+---
+title: "Special Graphs for Final Project"
+author: Mark Mitri
+date: 12/7/2022
+output: html_notebook
+---
+
+```{r}
+# Install Libraries
+install.packages("plotly")
+install.packages("ggcorrplot")
+```
+
+```{r}
+# Load Libraries
+library("ggplot2")
+library("plotly") 
+library("ggcorrplot")
+```
+
+
+```{r}
+# read a local csv into a variable
+dataset <- read.csv("Traffic_Violations.csv", header = TRUE)
+```
+
+```{r}
+# Remove columns that are not relevant to the data we want to use
+TrafficDF <- subset(dataset, select = c("Violation.Type", "Color", "Make", "Model", "VehicleType", "Year"))
+
+# This is done to avoid dropping a row that has a non-meaningful null value
+# Set all empty cells to NA
+TrafficDF[TrafficDF=="" | TrafficDF=="N/A"] <- NA
+# Remove all cells with NA
+TrafficDF<-na.omit(TrafficDF)
+# Convert Citation to 1 (yes there is a violation) and Warning to 0
+TrafficDF$Class <- ifelse(TrafficDF$Violation.Type == "Citation", 1, 0)
+# Drop Violation.Type column
+TrafficDF$Violation.Type <- NULL
+```
+
+```{r}
+# For the simplicity, we will choose car whose year ranges from 1990 to 2021
+TrafficDF$Year <- as.numeric(TrafficDF$Year)
+TrafficDF <- TrafficDF[TrafficDF$Year >= 1990 & TrafficDF$Year < 2022, ]
+TrafficDF <- TrafficDF[!TrafficDF$VehicleType %in% names(which(table(TrafficDF$VehicleType) < 10)), ]
+
+# Since Camouflage and Chrome are outliers, we will drop them
+TrafficDF<-subset(TrafficDF, Color!="CAMOUFLAGE" & Color!="CHROME")
+```
+
+
+```{r}
+# CLEAN CAR MAKE DATA
+TrafficDF$Make[TrafficDF$Make %in% c("TOYT","TOYO","TOY","TOYOT","TOYTA")] <- "TOYOTA"
+TrafficDF$Make[TrafficDF$Make == "HOND"] <- "HONDA"
+TrafficDF$Make[TrafficDF$Make %in% c("CHEV", "CHEVY","CHEVORLET")] <- "CHEVROLET"
+TrafficDF$Make[TrafficDF$Make %in% c("NISS","NISSIAN")] <- "NISSAN"
+TrafficDF$Make[TrafficDF$Make %in% c("MERZ", "MERC","MERCEDEZ","MERCEDES BENZ")] <- "MERCEDES"
+TrafficDF$Make[TrafficDF$Make == "ACUR"] <- "ACURA"
+TrafficDF$Make[TrafficDF$Make == "DODG"] <- "DODGE"
+TrafficDF$Make[TrafficDF$Make %in% c("CHRY","CHRYS","CHRYSTLER")] <- "CHRYSLER"
+TrafficDF$Make[TrafficDF$Make %in% c("HYUN","HYUND","HYUNDIA")] <- "HYUNDAI"
+TrafficDF$Make[TrafficDF$Make %in% c("SUBA","SUBU","SUB")] <- "SUBARU"
+TrafficDF$Make[TrafficDF$Make %in% c("VOLK", "VW", "VOLKS", "VOLKSWAGEN") ] <- "VOLKSWAGON"
+TrafficDF$Make[TrafficDF$Make %in% c("INFI", "INFINITY")] <- "INFINITI"
+TrafficDF$Make[TrafficDF$Make %in% c("CADI","CADILAC")] <- "CADILLAC"
+TrafficDF$Make[TrafficDF$Make %in% c("MITS","MITZ")] <- "MITSUBISHI"
+TrafficDF$Make[TrafficDF$Make == "MAZD"] <- "MAZDA"
+TrafficDF$Make[TrafficDF$Make %in% c("LEXS", "LEXU","LEX")] <- "LEXUS"
+TrafficDF$Make[TrafficDF$Make %in% c("VOLV")] <- "VOLVO"
+TrafficDF$Make[TrafficDF$Make %in% c("PONT")] <- "PONTIAC"
+TrafficDF$Make[TrafficDF$Make %in% c("MINI")] <- "MINI COOPER"
+TrafficDF$Make[TrafficDF$Make %in% c("LINC")] <- "LINCOLN"
+TrafficDF$Make[TrafficDF$Make %in% c("BUIC")] <- "BUICK"
+TrafficDF$Make[TrafficDF$Make %in% c("SATU", "STRN")] <- "SATURN"
+TrafficDF$Make[TrafficDF$Make %in% c("LNDR", "LANDROVER")] <- "LAND ROVER"
+TrafficDF$Make[TrafficDF$Make %in% c("PORS")] <- "PORSCHE"
+TrafficDF$Make[TrafficDF$Make %in% c("INTL")] <- "INTERNATIONAL"
+TrafficDF$Make[TrafficDF$Make %in% c("ISUZ","ISU")] <- "ISUZU"
+TrafficDF$Make[TrafficDF$Make %in% c("OLDSMOBILE")] <- "OLDS"
+TrafficDF$Make[TrafficDF$Make %in% c("SCIO")] <- "SCION"
+TrafficDF$Make[TrafficDF$Make %in% c("SUZU", "SUZI")] <- "SUZUKI"
+TrafficDF$Make[TrafficDF$Make %in% c("JAGU")] <- "JAGUAR"
+TrafficDF$Make[TrafficDF$Make %in% c("FRHT")] <- "FREIGHTLINER"
+TrafficDF$Make[TrafficDF$Make %in% c("PLYM")] <- "PLYMOUTH"
+```
+
+
+```{r}
+# CLEANING CAR MAKE
+# Get top 30 most common car make
+tab <- table(TrafficDF$Make)
+tab <- tab[order(tab,decreasing = TRUE)][1:30]
+common_car_make <- names(tab)
+# Select rows that have cars with common make
+TrafficDF <- TrafficDF[TrafficDF$Make %in% common_car_make,]
+```
+
+```{r}
+# CLEANING CAR MODEL
+# Get top 100 most common car model
+tab <- table(TrafficDF$Model)
+tab <- tab[order(tab,decreasing = TRUE)][1:100]
+common_car_model <- names(tab)
+# Select rows that have cars with common make
+TrafficDF <- TrafficDF[TrafficDF$Model %in% common_car_model,]
+```
+
+
+```{r}
+# Choose 100,000 rows to use only
+df <- TrafficDF[1:3000,]
+# To avoid the error factor has new levels, remove rows with VehicleType that occurs less than 10 times
+df <- df[!df$VehicleType %in% names(which(table(df$VehicleType) < 10)), ]
+```
+
+```{r}
+# Frequency of Make & Model Graph
+
+# Creating an empty dataframe to house frequency data
+mat = matrix(ncol = 2, nrow = 2987)
+freqHOLD=data.frame(mat)
+
+# Remove unwanted columns
+freqHOLD$X1 <- NULL
+freqHOLD$X2 <- NULL
+
+# Combining Make and Model of cars into one column for easier graphs
+freqHOLD$MakeModel <- paste(df$Make, df$Model)
+
+# Tally the frequency of each make and model
+freqTrafficDF <- table(freqHOLD)
+
+# Convert to non-atomic dataframe
+freqTrafficDF <- as.data.frame(freqTrafficDF)
+
+# Sort the most frequent Make & Model
+freqTrafficDF <- freqTrafficDF[order(freqTrafficDF$Freq, decreasing= T),]
+
+# Hold only the top 10 popular Make & Model
+freqTraffic <- freqTrafficDF[1:10,]
+
+# Set the row names to 1-10
+row.names(freqTraffic) <- 1:nrow(freqTraffic)
+
+# Function to increase the size of the plot to
+# account for the long car names
+horizontal.plot <- function(pl) {
+  par(mar=c(5,8,4,2) + 0.6) # Doubles left margin.
+  pl
+  par(mar=c(5,4,4,2) + 0.1) # Restore default
+}
+
+# Bar graph of Frequency of Make & Model
+horizontal.plot(barplot(freqTraffic$Freq, names.arg = freqTraffic$MakeModel, main = "Most Common Car Makes & Models", xlab = "Frequency",  hor=TRUE, las=2, col = grey.colors(10)))
+```
+
+```{r}
+# Distribution of car frequencies
+
+boxplot(freqTrafficDF$Freq, horizontal = T, main = "Distribution of the Frequency of Car Make & Model", xlab = "Frequency")
+```
+
+```{r}
+# Most Common car across characteristics
+
+# Creating an empty dataframe to house frequency data
+mat = matrix(ncol = 2, nrow = 2987)
+mostCommonCars=data.frame(mat)
+
+# Remove unwanted columns
+mostCommonCars$X1 <- NULL
+mostCommonCars$X2 <- NULL
+
+# Combining Make and Model of cars into one column for easier graphs
+mostCommonCars$MakeModel <- paste(df$Make, df$Model)
+mostCommonCars$Color <- df$Color
+mostCommonCars$VehicleType <- df$VehicleType
+mostCommonCars$Year <- df$Year
+
+# Tally the frequency of each car
+mostCommonCars <- table(mostCommonCars)
+
+# Convert to non-atomic dataframe
+mostCommonCars <- as.data.frame(mostCommonCars)
+
+# Sort the most frequent cars
+mostCommonCars <- mostCommonCars[order(mostCommonCars$Freq, decreasing= T),]
+
+# Hold only the top 10 popular cars
+mostCommonCars <- mostCommonCars[1:10,]
+
+# Set the row names to 1-10
+row.names(mostCommonCars) <- 1:nrow(mostCommonCars)
+```
+
+```{r}
+# Most common Color
+
+# Creating an empty dataframe to house frequency data
+mat = matrix(ncol = 2, nrow = 2987)
+mostCommonColor=data.frame(mat)
+
+# Remove unwanted columns
+mostCommonColor$X1 <- NULL
+mostCommonColor$X2 <- NULL
+
+# Combining Make and Model of cars into one column for easier graphs
+mostCommonColor$Color <- df$Color
+
+# Tally the frequency of each make and model
+mostCommonColor <- table(mostCommonColor)
+
+# Convert to non-atomic dataframe
+mostCommonColor <- as.data.frame(mostCommonColor)
+
+# Sort the most frequent Make & Model
+mostCommonColor <- mostCommonColor[order(mostCommonColor$Freq, decreasing= T),]
+
+# Hold only the top 10 popular Make & Model
+mostCommonColor <- mostCommonColor[1:10,]
+
+# Set the row names to 1-10
+row.names(mostCommonColor) <- 1:nrow(mostCommonColor)
+
+# Bar graph of Frequency of Make & Model
+horizontal.plot(barplot(mostCommonColor$Freq, names.arg = mostCommonColor$Color, main = "Most Common Car Color", xlab = "Frequency",  hor=TRUE, las=2, col = grey.colors(10)))
+```
+
+```{r}
+# Distribution of car frequencies
+
+boxplot(mostCommonColor$Freq, horizontal = T, main = "Distribution of the Frequency of Car Colors", xlab = "Frequency")
+```
+
+```{r}
+# Most common year
+
+# Creating an empty dataframe to house frequency data
+mat = matrix(ncol = 2, nrow = 2987)
+mostCommonYear=data.frame(mat)
+
+# Remove unwanted columns
+mostCommonYear$X1 <- NULL
+mostCommonYear$X2 <- NULL
+
+# Combining Make and Model of cars into one column for easier graphs
+mostCommonYear$Year <- df$Year
+
+# Tally the frequency of each make and model
+mostCommonYear <- table(mostCommonYear)
+
+# Convert to non-atomic dataframe
+mostCommonYear <- as.data.frame(mostCommonYear)
+
+# Sort the most frequent Make & Model
+mostCommonYear <- mostCommonYear[order(mostCommonYear$Freq, decreasing= T),]
+
+# Hold only the top 10 popular Make & Model
+mostCommonYear <- mostCommonYear[1:10,]
+
+# Set the row names to 1-10
+row.names(mostCommonYear) <- 1:nrow(mostCommonYear)
+
+# Bar graph of Frequency of Make & Model
+horizontal.plot(barplot(mostCommonYear$Freq, names.arg = mostCommonYear$Year, main = "Most Common Car Year", xlab = "Frequency",  hor=TRUE, las=2, col = grey.colors(10)))
+```
+
+```{r}
+# Distribution of car frequencies
+
+boxplot(mostCommonYear$Freq, horizontal = T, main = "Distribution of the Frequency of Car Year", xlab = "Frequency")
+```
+
+```{r}
+# corplot
+
+# Convert dataframe to numerical values
+corplot <- data.matrix(df)
+# Convert atomic vector to dataframe
+corplot <- as.data.frame(corplot)
+
+corr <- round(cor(corplot),1)
+p.mat <- cor_pmat(corplot)
+ggcorrplot(corr, lab = T, p.mat = p.mat, outline.col = "white", ggtheme = ggplot2::theme_gray, colors=c("#6D9EC1", "white", "#E46726"), insig = "blank", title = "Correlation Matrix of Characteristics")
+```

@@ -1,0 +1,98 @@
+---
+title: "HW8"
+author: "Mark Mitri"
+date: "11 7 2022"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+In this question we get experience with Naive Bayes classification in R while implementing cross-validation.  You may use the e1071 package for Naive Bayes that we used in class, but you may not use caret (or any other package that implements cross-validation for you).
+
+Import the data set at this url: http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data 
+
+Simple Description of data:
+
+# #  Attribute                        Domain
+# -- -----------------------------------------
+# 1. Sample code number              id number
+# 2. Clump Thickness                  1 - 10
+# 3. Uniformity of Cell Size          1 - 10
+# 4. Uniformity of Cell Shape         1 - 10
+# 5. Marginal Adhesion                1 - 10
+# 6. Single Epithelial Cell Size      1 - 10
+# 7. Bare Nuclei                      1 - 10
+# 8. Bland Chromatin                  1 - 10
+# 9. Normal Nucleoli                  1 - 10
+# 10. Mitoses                         1 - 10
+# 11. Class:     (2 = benign (negative), 4 = malignant (positive class))
+
+a, 5 points)
+
+Model this dataset using 10-fold cross validation to estimate precision, recall, and accuracy with more confidence. Calculate the performance measures for each fold and then average the measures at the end. Print out the average measures at the end (with labels). Keep in mind that including an id number as a feature does not make sense.  
+```{r}
+# Use Required Libraries
+library(caTools)
+library(ROCR)
+library(rpart)
+library(e1071)
+library(ggplot2)
+```
+
+```{r}
+# Read in the data over the internet
+url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data"
+data <- read.table(file = url, header = TRUE, sep = ",", stringsAsFactors = T)
+# Rename the columns to make more sense
+colnames(data) <- c("CodeNum", "ClumpThickness", "CellSize", "CellShape", "MargAdh", "EpithCellSize", "BareNucl", "BlandChrom", "NormNucl", "Mitoses", "Class")
+# Change the type of data for column "BareNucl"
+data$BareNucl <- as.integer(data$BareNucl)
+# Remove NAs from dataframe
+data <- na.omit(data)
+```
+
+```{r}
+# Local variable for the data
+crossVal <- data
+# Define number of data frames to split into
+n <- 10
+# Split dataframe into n equal-sized data frame
+splitData <- split(crossVal, factor(sort(rank(row.names(crossVal))%%n)))
+```
+
+b, 5 points):
+
+Use a single random split (80% training, 20% testing) data on the same dataset to generate estimated class probabilities for Naive Bayes and for Logistic Regression.  Generate a plot containing both ROC graphs so that classifier performance can be compared.
+
+```{r}
+randomSplit <- data
+randomSplit$Class <- factor(randomSplit$Class, levels = c(2,4), labels = c("False", "True"))
+set.seed(88)
+split <- sample.split(randomSplit$Class, SplitRatio = 0.8)
+train <- randomSplit[split,]
+test <- randomSplit[!split,]
+
+# Logistic Regression Model
+modelLR <- glm(Class ~.-CodeNum, data=train, family=binomial)
+predictLR <- predict(modelLR, test, type='response')
+ROCRpred <- prediction(predictLR, test$Class)
+ROCRperf <- performance(ROCRpred, 'tpr','fpr')
+# ROC Graph
+plot(ROCRperf, colorize=TRUE, text.adj=c(-0.2,1.7), main="ROC Curve")
+
+# Naive Bayes Model
+modelNB <- naiveBayes(Class ~.-CodeNum, data=train, usekernel=T)
+predictNB <- predict(modelNB, test)
+NBROCRpred <- prediction(predictNB, test$Class)
+NBROCperf <- performance(NBROCRpred, 'tpr', 'fpr')
+plot(NBROCperf, col=3, add=TRUE)
+legend(0.6, 0.3, c('Logistic Regression', 'Naive Bayes'), 2:3)
+
+```
+
+
+3. Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.
+

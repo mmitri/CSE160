@@ -1,0 +1,169 @@
+---
+title: "Final Project Import Data & Cleaning"
+output: html_notebook
+---
+  
+```{r}
+# read a local csv into a variable
+dataset <- read.csv("Traffic_Violations.csv", header = TRUE)
+dataset
+```
+
+```{r}
+# Remove columns that are not relevant to the data we want to use
+TrafficDF <- subset(dataset, select = -c(Date.Of.Stop, Time.Of.Stop, Description,Location,Accident, Belts, SeqID, Agency, SubAgency, Latitude, Longitude, Search.Conducted, Search.Disposition, Search.Outcome, Search.Reason, Search.Reason.For.Stop, Search.Type, Search.Arrest.Reason, Personal.Injury, Property.Damage, Fatal, Commercial.License, HAZMAT, Commercial.Vehicle, Alcohol, Work.Zone, Charge, Article, Contributed.To.Accident, Geolocation, Arrest.Type, Driver.City))
+
+# This is done to avoid dropping a row that has a non-meaningful null value
+# Set all empty cells to NA
+TrafficDF[TrafficDF=="" | TrafficDF=="N/A"] <- NA
+# Remove all cells with NA
+TrafficDF<-na.omit(TrafficDF)
+# Convert Citation to 1 (yes there is a violation) and Warning to 0
+TrafficDF$Violation <- ifelse(TrafficDF$Violation.Type == "Citation", 1, 0)
+# Drop Violation.Type column
+TrafficDF$Violation.Type <- NULL
+TrafficDF
+```
+
+```{r}
+# Clean data related to states (State, Driver.State, DL.State) by choosing only valid states in the US 
+# State
+TrafficDF <- TrafficDF[TrafficDF$State %in% c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"),]
+
+# Driver.State
+TrafficDF <- TrafficDF[TrafficDF$Driver.State %in% c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"),]
+
+# DL.State
+TrafficDF <- TrafficDF[TrafficDF$DL.State %in% c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"),]
+
+TrafficDF
+
+```
+
+```{r}
+unique(TrafficDF$VehicleType)
+# Factorize vehicle type
+TrafficDF$VehicleType <- as.factor(TrafficDF$VehicleType)
+```
+
+
+```{r}
+unique(TrafficDF$Year)
+# For the simplicity, we will choose car whose year ranges from 1990 to 2021
+TrafficDF$Year <- as.numeric(TrafficDF$Year)
+TrafficDF <- TrafficDF[TrafficDF$Year >= 1990 & TrafficDF$Year < 2022, ]
+TrafficDF
+```
+
+
+```{r}
+# Occurences of car make
+tab <- table(TrafficDF$Make)
+# Sort the occurences of car make in a decreasing order
+tab[order(tab,decreasing = TRUE)]
+```
+
+
+```{r}
+# CLEAN CAR MAKE DATA
+TrafficDF$Make[TrafficDF$Make == "TOYT"] <- "TOYOTA"
+TrafficDF$Make[TrafficDF$Make == "HOND"] <- "HONDA"
+TrafficDF$Make[TrafficDF$Make %in% c("CHEV", "CHEVY")] <- "CHEVROLET"
+TrafficDF$Make[TrafficDF$Make == "NISS"] <- "NISSAN"
+TrafficDF$Make[TrafficDF$Make == "MERZ"] <- "MERCEDES"
+TrafficDF$Make[TrafficDF$Make == "ACUR"] <- "ACURA"
+TrafficDF$Make[TrafficDF$Make == "DODG"] <- "DODGE"
+TrafficDF$Make[TrafficDF$Make == "CHRY"] <- "CHRYSLER"
+TrafficDF$Make[TrafficDF$Make == "HYUN"] <- "HYUNDAI"
+TrafficDF$Make[TrafficDF$Make == "SUBA"] <- "SUBARU"
+TrafficDF$Make[TrafficDF$Make %in% c("VOLK", "VW", "VOLKS", "VOLKSWAGEN") ] <- "VOLKSWAGON"
+TrafficDF$Make[TrafficDF$Make == "INFI"] <- "INFINITI"
+TrafficDF$Make[TrafficDF$Make == "CADI"] <- "CADILLAC"
+TrafficDF$Make[TrafficDF$Make == "MITS"] <- "MITSUBISHI"
+TrafficDF$Make[TrafficDF$Make == "MAZD"] <- "MAZDA"
+
+# Get top 25 most common car make
+tab <- table(TrafficDF$Make)
+tab <- tab[order(tab,decreasing = TRUE)][1:25]
+# Put them into an array
+common_car_make <- names(tab)
+common_car_make
+
+# Select rows that have cars with common make
+TrafficDF <- TrafficDF[TrafficDF$Make %in% common_car_make,]
+TrafficDF
+```
+
+
+```{r}
+common_model <- table(TrafficDF$Model)
+common_model[order(common_model,decreasing = TRUE)][1:25]
+```
+
+
+```{r}
+# Factorize all data
+TrafficDF$State <- as.factor(TrafficDF$State)
+TrafficDF$Driver.State <- as.factor(TrafficDF$Driver.State)
+TrafficDF$DL.State <- as.factor(TrafficDF$DL.State)
+TrafficDF$Make <- as.factor(TrafficDF$Make)
+# TrafficDF$Model <- as.factor(TrafficDF$Model)
+TrafficDF$Color <- as.factor(TrafficDF$Color)
+TrafficDF$Race <- as.factor(TrafficDF$Race)
+TrafficDF$Gender <- as.factor(TrafficDF$Gender)
+
+# Choose 100,000 rows to use only
+df <- TrafficDF[1:100000,]
+df
+```
+
+```{r}
+# Naive-Bayes classification on predicting citation
+# based on columns 29-33, using e1071 from HW8
+library(e1071)
+library(dplyr)
+library(ggplot2)
+
+# Set the seed for reproducibility
+set.seed(88)
+
+# Empty vectors to concatenate performance measures to
+precisionVec <- vector()
+recallVec <- vector()
+fMeasureVec <- vector()
+accuracyVec <- vector()
+
+# Create another dataframe of just the target and the variables
+naiveViolation <- TrafficDF[c('Year','Make','Model','Color','Violation.Type')]
+# Convert dataframe to numerical values
+naiveViolation <- data.matrix(naiveViolation)
+# Convert atomic vector to dataframe
+naiveViolation <- as.data.frame(naiveViolation)
+
+# Splitting the data into train and test based on 80/20 split
+ind <- sample(2, nrow(naiveViolation), replace = T, prob = c(0.8, 0.2))
+train <- naiveViolation[ind == 1,]
+test <- naiveViolation[ind == 2,]
+
+# Naive Bayes model predicting Violation Type based on all of the variables, using the training set
+model <- naiveBayes(Violation.Type ~ ., data = train, usekernel = T)
+
+
+p <- predict(model, test)
+tab <- table(p, test$Violation.Type)
+tab
+
+# Get the performance measures
+precision <- tab[1,1] / sum(tab[1,]) # Precision = TP / (TP + FP)
+recall <- tab[1,1] / sum(tab[,1]) # Recall = TP / (TP + FN)
+fMeasure <- 2 * precision * recall / (precision + recall)
+accuracy <- sum(diag(tab))/sum(tab)
+  
+# Concatenate newest values of perf measures
+precisionVec <- c(precisionVec, precision)
+recallVec <- c(recallVec, recall)
+fMeasureVec <- c(fMeasureVec, fMeasure)
+accuracyVec <- c(accuracyVec, accuracy)
+
+paste("Precison: " , precisionVec, ", Recall: ", recallVec, ", fMeasure: ", fMeasureVec, ", Accuracy: ", accuracyVec)
+```

@@ -1,0 +1,115 @@
+---
+title: "Homework 3"
+output: html_notebook
+---
+
+Instructions: Submit an R notebook that does what each of the following questions requires.
+
+NOTE: Make sure you are submitting the R Notebook, not the HTML file that this would generate.  The file extension will be .Rmd
+
+0) Edit the header of this notebook to include your name and the date. 
+
+1) (2 points)
+
+Write the expression for the entropy of a collection that has 9 positively labeled items and 13 negatively labeled items?  
+
+```{r}
+-(9/(9+13) * log(9/(9+13),2) + 13/(9+13) * log(13/(9+13),2))
+```
+
+2)  (2 points)
+
+Calculate the information gain of an attribute that takes a collection with 12 positive items and 52 negative items and divides it into three collections: the first having 10 positive and 20 negative items, the second having 2 positive and 10 negative items, and the third having just 22 negative items? 
+
+```{r}
+full_collection <- -(12/(12+52) * log(12/(12+52),2) + 52/(12+52) * log(52/(12+52),2))
+full_collection
+
+c1_entropy <- -(10/(10+20) * log(10/(10+20),2) + 20/(10+20) * log(20/(10+20),2))
+c2_entropy <- -(2/(10+2) * log(2/(10+2),2) + 10/(10+2) * log(10/(10+2),2))
+c3_entropy <- -(22/22 * log(22/22,2))
+
+c1_entropy
+c2_entropy
+c3_entropy
+
+#Information Gain = entropy(collection) - probC1 * entropy(c1) - probC2 * entropy(c2) - probC3 * entropy(c3)
+IG <- full_collection - (30/64) * c1_entropy - (12/64) * c2_entropy - (22/64) * c3_entropy
+
+IG
+```
+
+3)  (4 points)
+
+Much of our data is stored in columns of dataframes as factors.  Two useful functions to help you reason about a factor are:
+
+- **nlevels(*factor*)** - returns the number of unique values defined for the factor
+- **levels(*factor*)** - returns the vector of unique values defined for the factor
+
+Write an R function called **calc_entropy** to take a factor as its parameter containing class labels and calculate and print the entropy of the set of labels.  While you may use built-in helper functions (i.e., ones that don't require an additional library), you may not use a function that calculates entropy for you.
+
+Also note that the examples we have seen in class use a log with base 2 to calculate entropy.  However, when there are more than two classes, this can cause entropy values to get too large (larger than 1).  To prevent this, use a base that matches the number of classes.
+
+Your implementation is strictly required to follow the definition, and pass our testing.  We will test with data that we have not shared, and check your result with the expected result. Submissions that fail to pass the tests may be penalized.
+
+```{r}
+
+# your code here
+# I'm sure there are more efficient ways to do this.  Here is one solution.
+
+calc_entropy <- function(f) {
+  lf <- levels(f) 
+  total <- length(f) # the number of entries in f
+
+  p <- NULL
+  for (i in 1:length(lf)) {
+    p[i] <- sum(f == levels(f)[i])
+  }
+
+  p <- p / total
+  e <- - sum(p * log(p, nlevels(f)))
+  return(e)
+}
+
+
+# useful tests to try
+calc_entropy(iris$Species)
+# should get 1
+
+library(MASS)
+calc_entropy(cats$Sex)
+# should get .9111943
+
+```
+
+4) (2 points)
+
+Write R code to build an rpart decision tree on the wine dataframe from HW2.  Then plot the tree learned.
+
+```{r}
+# From HW2
+wine <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data", header=FALSE)
+colnames(wine) <- c ("Class","Alcohol", "Malic.Acid", "Ash", "Alcalinity.of.Ash", "Magnesium", "Total.Phenols", "Flavanoids", "Nonflavanoid.Phenols", "Proanthocyanins", "Color.Intensity", "Hue", "Diluted.Wines.Measure", "Proline")
+wine$Class <- as.factor(wine$Class)
+
+
+# your code here
+#Making the tree and use it
+library(rpart)
+library(partykit)
+wineTree <- rpart(Class ~ ., data=wine, method="class")
+plot(as.party(wineTree))
+
+```
+
+5) (2 points)
+
+Write R code to calculate and print the decision tree's accuracy on its training data.  You may only use built-in functions and any libraries we have discussed in class.
+
+```{r}
+
+# your code here
+pred <- predict(wineTree, type="class")
+t <- table(pred=pred,actual=wine$Class)
+sum(diag(t))/sum(t)
+```

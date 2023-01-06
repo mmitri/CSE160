@@ -1,0 +1,40 @@
+---
+title: "HW5"
+author: "Mark Mitri"
+date: "9/19/2022"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Your organization has decided to standardize on one classifier, and has decided to use the data about the passengers on the Titanic and predict their survival to choose the best classification method.  Your task is to compare the two classifiers as described below, and provide your recommendation on the choice of classifier as a result of this work.
+
+Here is the information about the data set: https://biostat.app.vumc.org/wiki/pub/Main/DataSets/Ctitanic3.html
+
+Here are train and test sets pre-divided for you*:
+
+http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTrain.csv
+http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTest.csv
+
+*Use these web addresses to load them into R directly (instead of putting them on your machine first).*
+
+This assignment will require you to use two different classifiers and use some techniques from class to compare them.  We will be using the attributes pclass, fare, sex, age, embarked to predict survival. 
+
+* Slight data cleaning: age and fare both need a little bit of cleaning for the data to be sensible. Explain in the text of your notebook what you did and why you did it.  (What method you use will not affect your grade.)  (2 points)
+* Use logistic regression (function: glm, for 4 points) and k nearest neighbor (package: kknn, another 4 points) 
+  - For each, build the model using the training set
+  - Use the model on the test set and get predictions
+  - Make (and output) a confusion matrix
+  - Calculate (and output) test set accuracy, noting that acceptable accuracy is above 70%
+
+*There will be no folds or cross validation in this assignment; keep in mind that those would make your techniques much stronger.
+
+```{r}
+# YOUR CODE HERE
+```
+
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

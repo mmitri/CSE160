@@ -1,0 +1,55 @@
+---
+title: "My first R Notebook"
+date: "3 July 2022"
+author: "Brian D. Davison"
+output: html_notebook
+---
+
+RStudio is a powerful IDE (Integrated Development Environment) and it can work with a variety of kinds of files. In our last lab we created an R script file (.R). Another kind of file is called an R Notebook. This kind of file provides for both text and code, and is how the first lab was prepared (as an R Notebook, and saved as HTML). The code in an R Notebook is live – you can edit and re-run the code within the notebook, and also have notes and instructions.
+
+This file is an [R Markdown](http://rmarkdown.rstudio.com) Notebook (typically with a .Rmd extension). Notice some metadata at the top of this file (which is just a plain text file that is interpreted by RStudio). The `output:` line is required for R Notebooks.  When you execute code within the notebook, the results appear beneath the code. 
+ 
+RStudio may prompt you to install or update some more libraries the first time you try opening or creating an R Notebook. 
+
+Try executing this chunk by clicking the green *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter* (might be Ctrl-Shift-Enter or similar on PCs). Notice where the plot shows up as compared to when you put such a command in the Console.
+
+```{r}
+plot(cars, xlab = "Speeds (mph)", ylab = "Stopping distance (ft)")
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.  Or just type the requisite backtics and r within curly braces.
+
+```{r}
+x <- 4
+```
+
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).  Future saves will update this preview.
+
+Note: The first time you try to create a preview, RStudio will likely ask for more libraries to be installed. When RStudio is installing libraries, it is really calling `install.packages()` in your Console, and you should look there for warnings or error messages.  Again, you should permit it to install the libraries (but make sure you say NO if it ever asks to install a library from source, even if it is newer).  
+
+Note 2: Sometimes you might see (in yellow) an error from RStudio like `"Error creating notebook: Exception caught: (SecurityError): Blocked a frame with origin "http://127.0.0.1:23313" from accessing a cross-origin frame.`  You can ignore it, and save again, and it will likely go away.
+
+R as a calculator within a single chunk:
+
+```{r}
+2 + 44
+```
+
+A long vector
+```{r}
+1:200
+```
+
+But the brackets reflect the index numbers, of the first element on each line.  They are not part of the content of the vector, but are just help to the reader to be able to know where items are within a long vector.  We can see this when we start with something other than one:
+```{r}
+20:220
+```
+
+The preview shows you a rendered HTML copy of the contents of the editor. *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed. 
+
+We can also clear and re-run all the chunks (which is a good idea to verify that everything still works before submitting or publishing an R Notebook).  Under the *Run* button at top of this window, select  *Restart R and Run All Chunks*.
+
+Under the surface, RStudio is saving the preview as an HTML file which you can then open in a web browser or upload to a web server so that others can see what you've accomplished, just like how the first lab document was generated.
+
+To start a new R Notebook, use the menu **File->New File->R Notebook**. You can then save it as filename.Rmd (the .Rmd should be automatic).

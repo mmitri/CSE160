@@ -1,0 +1,97 @@
+---
+title: "HW5"
+author: "Mark Mitri"
+date: "9/19/2022"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Your organization has decided to standardize on one classifier, and has decided to use the data about the passengers on the Titanic and predict their survival to choose the best classification method.  Your task is to compare the two classifiers as described below, and provide your recommendation on the choice of classifier as a result of this work.
+
+Here is the information about the data set: https://biostat.app.vumc.org/wiki/pub/Main/DataSets/Ctitanic3.html
+
+Here are train and test sets pre-divided for you*:
+
+http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTrain.csv
+http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTest.csv
+
+*Use these web addresses to load them into R directly (instead of putting them on your machine first).*
+
+This assignment will require you to use two different classifiers and use some techniques from class to compare them.  We will be using the attributes pclass, fare, sex, age, embarked to predict survival. 
+
+* Slight data cleaning: age and fare both need a little bit of cleaning for the data to be sensible. Explain in the text of your notebook what you did and why you did it.  (What method you use will not affect your grade.)  (2 points)
+* Use logistic regression (function: glm, for 4 points) and k nearest neighbor (package: kknn, another 4 points) 
+  - For each, build the model using the training set
+  - Use the model on the test set and get predictions
+  - Make (and output) a confusion matrix
+  - Calculate (and output) test set accuracy, noting that acceptable accuracy is above 70%
+
+*There will be no folds or cross validation in this assignment; keep in mind that those would make your techniques much stronger.
+
+```{r}
+# Reading csv from web to variable
+titanicTrain = read.csv('http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTrain.csv', header = TRUE, sep = ",")
+titanicTest = read.csv('http://www.cse.lehigh.edu/~brian/course/2022/datascience/TitanicTest.csv', header = TRUE, sep = ",")
+```
+
+```{r}
+# Visualizing Data
+str(titanicTrain)
+print("==========================================================")
+str(titanicTest)
+print("==========================================================")
+head(titanicTest)
+print("==========================================================")
+```
+
+```{r}
+# Data cleaning
+# I looped through each dataframe's age and fare and checked if there is an NA value and replaced 
+# it with a 0
+titanicTrain$age[is.na(titanicTrain$age)] = 0
+titanicTrain$fare[is.na(titanicTrain$fare)] = 0
+titanicTest$age[is.na(titanicTest$age)] = 0
+titanicTest$fare[is.na(titanicTest$fare)] = 0
+```
+
+```{r}
+# installing kknn
+# install.packages("kknn")
+library(kknn)
+library(caret)
+```
+
+```{r}
+# Building Logistical Regression Model
+trainGlm <- glm(formula = survived ~ embarked + pclass + fare + sex, family = binomial, data = titanicTrain)
+trainGlmPred <- predict(trainGlm, titanicTest, type = 'response')
+# define threshold
+threshold <- 0.5 
+as.integer(predTitanicTrain <- trainGlmPred > threshold)
+confusionMatrix(titanicTrain$survived, trainGlmPred)
+# making table
+#table(trainGlmPred != 0, titanicTest$survived != 0, dnn = c("pred", "act"))
+# accuracy
+
+```
+
+```{r}
+# kknn
+trainKKNN <- kknn(formula = survived ~ ., titanicTrain, titanicTest, distance = 2)
+# predict
+trainKKNNPred <- predict(trainKKNN)
+# classifying predictions
+trainKKNNPred <- ifelse(trainKKNNPred > 0.5,1,0)
+# making table
+table(trainKKNNPred != 0, titanicTest$survived != 0, dnn = c("pred", "act"))
+#calculate accuracy
+print(paste('Accuracy:', mean(trainKKNNPred == titanicTest$survived)))
+print(paste('Prediction:', mean(trainKKNNPred == titanicTest$survived) > 0.7))
+```
+
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

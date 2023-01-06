@@ -1,0 +1,88 @@
+---
+title: "HW6"
+author: "Mark Mitri"
+date: "10/17/2022"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Consider the problem of time series analysis for parking data.  At the webpage https://archive.ics.uci.edu/ml/datasets/Parking+Birmingham you'll find a dataset about parking utilization.  You'll need to download the zip file and unzip it locally.
+
+```{r}
+# Read in the local data as a csv with headers
+parking <- read.csv("C:\\Users\\MitriDell\\Documents\\Textbooks\\Senior - Fall 2022\\CSE 160\\Homework\\HW6\\dataset.csv", header = TRUE)
+
+# Visualize the data
+head(parking)
+```
+
+After you have read in the data, and examined it, you'll find that it contains occupancy numbers for multiple locations.  Let's work with just one location: 
+SystemCodeNumber == "BHMBCCMKT01" so generate a new dataframe by extracting the subset for this location.  (2 points)
+
+Let's build a model of regression, to predict the next occupancy level reading.  Using the second time series analysis R notebook as reference, create a dataframe with multiple attributes (3 points).  Note that this dataset is quite different, and so not all of the attributes we saw in class could be created here.
+
+```{r}
+# Select only the rows of data the match the SystemCodeNumber of BHMBCCMKT01
+parkSub <- parking[parking$SystemCodeNumber == "BHMBCCMKT01",]
+
+# Create a separate dataframe for making our attributes
+parkdf <- data.frame(parkSub=parkSub)
+
+# Create an attribute to predict the future Occupancy based on the previous. Have to make the first element NA
+parkdf$Prior1[1] <- NA
+
+# Loop through all the rows and record the previous Occupancy number
+for(i in 2:1312){
+  parkdf$Prior1[i] <- parkdf$parkSub.Occupancy[i-1]
+}
+
+# Create an attribute to predict the future Occupancy based on the 3 previous. Have to make the first 3 elements NA
+parkdf$Prior3[1] <- NA
+parkdf$Prior3[2] <- NA
+parkdf$Prior3[3] <- NA
+
+# Loop through all the rows and record the previous 3 Occupancy number
+for(i in 4:1312){
+  parkdf$Prior3[i] <- parkdf$parkSub.Occupancy[i-2]
+}
+
+# Create an attribute to track the time of day the occupancy usually increases. A repeated pattern that loops 18 times from ~7 am - 5 pm
+parkdf$Seasonal <- rep(1:18, each=1, length.out=1312)
+
+# A number to roughly represent the time that the data was taken
+parkdf$SimpleTime <- rep(7:16, each=2, length.out=1312)
+```
+
+Build a regression model based on those attributes (3 points) and evaluate it using the simple measures we saw in class (2 points).  Are you able to get 90% correlation?
+
+```{r}
+# Calculate the number of rows parkdf has
+rows <- dim(parkdf)[1]
+#rows
+
+# Separate the data into 80% train & 20% test
+train <- parkdf[13:floor(12+(rows-12)*.8),]
+test <- parkdf[-(1:floor(12+(rows-12)*.8)),]
+
+#dim(train)
+#dim(test)
+
+# Create the linear regression model using the training data on the attribute Occupancy based on the previous occupancy
+model <- glm(parkSub.Occupancy ~ Prior1 + Prior3 + Seasonal + SimpleTime, data = train)
+summary(model)
+pred.value <- predict(model,test)
+
+# Make a data frame to hold the test results
+actuals_preds <- data.frame(cbind(actuals=test$parkSub.Occupancy, predicteds=pred.value))
+correlation_accuracy <- cor(actuals_preds$actuals, actuals_preds$predicteds)
+
+# Print the accuracy of the model
+print("Correlation Accuracy is:")
+correlation_accuracy
+```
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

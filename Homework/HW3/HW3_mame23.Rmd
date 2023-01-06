@@ -1,0 +1,116 @@
+---
+title: "Homework 3"
+output: html_notebook
+author: "Mark Mitri"
+date: "9/10/2022"
+---
+
+Instructions: Submit an R notebook that does what each of the following questions requires.
+
+NOTE: Make sure you are submitting the R Notebook, not the HTML file that this would generate.  The file extension will be .Rmd
+
+0) Edit the header of this notebook to include your name and the date. 
+
+1) (2 points)
+
+Write the expression for the entropy of a collection that has 9 positively labeled items and 13 negatively labeled items?  
+
+```{r}
+pos1 <- 9/22
+neg1 <- 13/22
+entropy <- -(pos1*(log2(pos1)) + neg1*(log2(neg1)))
+entropy
+```
+
+2)  (2 points)
+
+Calculate the information gain of an attribute that takes a collection with 12 positive items and 52 negative items and divides it into three collections: the first having 10 positive and 20 negative items, the second having 2 positive and 10 negative items, and the third having just 22 negative items? 
+
+```{r}
+posParent <- 12/64
+negParent <- 52/64
+child1pos <- 10/30
+child1neg <- 20/30
+child2pos <- 2/12
+child2neg <- 10/12
+child3pos <- 0/22
+child3neg <- 22/22
+prob1 <- 30/64
+prob2 <- 12/64
+prob3 <- 22/64
+entropyParent <- -(posParent*(log2(posParent)) + negParent*(log2(negParent)))
+#entropyParent
+entropy1 <- -(child1pos*(log2(child1pos)) + child1neg*(log2(child1neg)))
+#entropy1
+entropy2 <- -(child2pos*(log2(child2pos)) + child2neg*(log2(child2neg)))
+#entropy2
+entropy3 <- -(child3neg*(log2(child3neg)))
+#entropy3
+
+infoGain <- (entropyParent - ((prob1)*entropy1 + (prob2)*entropy2 + (prob3)*entropy3))
+infoGain
+```
+
+3)  (4 points)
+
+Much of our data is stored in columns of dataframes as factors.  Two useful functions to help you reason about a factor are:
+
+- **nlevels(*factor*)** - returns the number of unique values defined for the factor
+- **levels(*factor*)** - returns the vector of unique values defined for the factor
+
+Write an R function called **calc_entropy** to take a factor as its parameter containing class labels and calculate and print the entropy of the set of labels.  While you may use built-in helper functions (i.e., ones that don't require an additional library), you may not use a function that calculates entropy for you.
+
+Also note that the examples we have seen in class use a log with base 2 to calculate entropy.  However, when there are more than two classes, this can cause entropy values to get too large (larger than 1).  To prevent this, use a base that matches the number of classes.
+
+Your implementation is strictly required to follow the definition, and pass our testing.  We will test with data that we have not shared, and check your result with the expected result. Submissions that fail to pass the tests may be penalized.
+
+```{r}
+
+# your code here
+calc_entropy <- function(factor){
+  # entropyFactor takes in a factor with its class labels and
+  # calculates the entropy of the set of labels
+  entropy <- 0
+  for(vec in levels(factor)){
+    level <- 0
+    for(col in factor){
+      if(col == vec){
+        level <- level + 1
+      }
+    }
+    entropy <- -(entropy + log(level/length(factor),base=exp(vec))* (level/length(factor)))
+  }
+  return(entropy)
+}
+
+```
+
+4) (2 points)
+
+Write R code to build an rpart decision tree on the wine dataframe from HW2.  Then plot the tree learned.
+
+```{r}
+# your code here
+sdata <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data", header = FALSE, sep = ",")
+colnames(sdata) <- c("Class","Alcohol", "Malic.Acid", "Ash", "Alcalinity.of.Ash", "Magnesium", "Total.Phenols", "Flavanoids", "Nonflavanoid.Phenols", "Proanthocyanins", "Color.Intensity", "Hue", "Diluted.Wines.Measure", "Proline")
+
+library(rpart)
+library(rpart.plot)
+wineForm <- as.formula("Class ~ Alcohol + Malic.Acid + Ash + Alcalinity.of.Ash + Magnesium + Total.Phenols + Flavanoids + Nonflavanoid.Phenols + Proanthocyanins + Color.Intensity + Hue + Diluted.Wines.Measure + Proline")
+tree_model <- rpart(wineForm, data = sdata, method = "class")
+# summary(tree_model)
+prp(tree_model, type=1,extra=1)
+```
+
+5) (2 points)
+
+Write R code to calculate and print the decision tree's accuracy on its training data.  You may only use built-in functions and any libraries we have discussed in class.
+
+```{r}
+
+# your code here
+vpred <- predict(tree_model, type="class")
+tab <- table(data.frame(sdata$Class, pred=vpred)); tab
+sum(diag(tab))/sum(tab)
+
+```

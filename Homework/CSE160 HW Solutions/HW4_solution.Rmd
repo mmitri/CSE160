@@ -1,0 +1,119 @@
+---
+title: "HW4"
+author: "Your name"
+date: "today"
+output: html_notebook
+---
+
+Instructions: Submit an R notebook that does what each of the following questions requires.
+
+Linear models
+
+
+1) (3 points)
+
+![The versicolor iris](https://upload.wikimedia.org/wikipedia/commons/2/27/Blue_Flag%2C_Ottawa.jpg)
+
+We have seen the Iris dataset previously.  Make a copy of the iris dataframe, and with the copy, create a new column called "class" that is TRUE when Species matches "versicolor" and FALSE otherwise.  Then delete the Species column.  This sets up the data to be used in building a versicolor classifier.
+
+```{r}
+myiris <- iris
+myiris$class <- myiris$Species == "versicolor"
+myiris$Species <- NULL
+```
+
+Now build a logistic regression model using the dataframe you have created.  Use that model to predict the probability of the class variable for the data used in training.
+```{r}
+train.lr <- glm(class ~ ., data=myiris, family = binomial)
+pclass <- predict(train.lr, type="response")
+```
+
+Now convert the predicted probability vector into a class prediction vector (using a threshold).
+Compare the class prediction vector with the actual class labels and calculate the accuracy of this model (e.g., how well it has learned the training data).
+```{r}
+cclass <- pclass > .5
+tab <- table(cclass, myiris$class)
+tab
+sum(diag(tab))/sum(tab)
+```
+
+
+2)  (2 points)
+
+Let's see if we can improve the performance you found above.  Add a new feature that is a nonlinear combination of one or more existing features.  Rebuild your model and evaluate it.  Does it perform better?
+
+```{r}
+myiris$Sepal.Width2 <- myiris$Sepal.Width ^ 2
+train.lr <- glm(class ~ ., data=myiris, family = binomial)
+pclass <- predict(train.lr, type="response")
+
+cclass <- pclass > .5
+tab <- table(cclass, myiris$class)
+tab
+sum(diag(tab))/sum(tab)
+```
+
+Add a second nonlinear feature.  Can it improve things further?
+
+```{r}
+myiris$Sepal2 <- myiris$Sepal.Width * myiris$Sepal.Length
+train.lr <- glm(class ~ ., data=myiris, family = binomial)
+pclass <- predict(train.lr, type="response")
+
+cclass <- pclass > .5
+tab <- table(cclass, myiris$class)
+tab
+sum(diag(tab))/sum(tab)
+```
+
+
+3)  (2 points)
+
+Install the library "e1071".  Use the `svm()` function with a basic "linear" kernel and `type="C-classification"` and perform the same versicolor classification task as above.  How does it compare?
+
+```{r}
+library(e1071)
+svm.fit <- svm(class ~ ., data=myiris, kernel="linear", type="C-classification")
+cclass <- predict(svm.fit)
+tab <- table(cclass, myiris$class)
+tab
+sum(diag(tab))/sum(tab)
+```
+
+What if you use a different kernel?  Can you get significantly better performance?
+
+```{r}
+library(e1071)
+svm.fit <- svm(class ~ ., data=myiris, kernel="radial", type="C-classification")
+cclass <- predict(svm.fit)
+tab <- table(cclass, myiris$class)
+tab
+sum(diag(tab))/sum(tab)
+```
+
+4) (2 points)
+
+Do you think it that Sepal.Length is predictable as a function of class and the other three measurements?  (We will not use the non-linear features for the moment.) Let's build a simple linear regression model using these original features.  This also uses `glm()` but using the default `gaussian` family.  Generate the vector of predicted values (same as before).
+
+```{r}
+linearregression <- glm(Sepal.Length ~ Sepal.Width + Petal.Width + Petal.Length + class, data=myiris, family = gaussian)
+values  <- predict(linearregression, type="response")
+```
+
+But how should we evaluate linear regression?  We can't use accuracy because we don't have class predictions.  A common metric is root mean squared error, defined as `sqrt(mean((firstvector - secondvector)^2))`.  Since it is an error measure, the smaller the value you get, the better it is.  What RMSE do you get for this linear regression model?
+
+```{r}
+sqrt(mean((values - iris$Sepal.Length)^2))
+```
+
+5) (1 point)
+
+Can you improve upon the performance in question 4 when adding the two non-linear variables from question 2?
+
+```{r}
+
+linearregression <- glm(Sepal.Length ~ ., data=myiris, family = gaussian)
+values  <- predict(linearregression, type="response")
+sqrt(mean((values - iris$Sepal.Length)^2))
+
+```

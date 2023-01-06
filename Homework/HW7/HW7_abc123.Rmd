@@ -1,0 +1,42 @@
+---
+title: "HW7"
+author: "Your name"
+date: "today"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Consider a old-fashioned mail-order (only) catalog company that traditionally sends large holiday catalogs to two million past and one million potential customers. This is an expensive process, as the printing and mailing costs \$3 for each catalog, and typically only 6% of existing customers and 2% of potential customers make a purchase. The average sale to an existing customer nets the company \$55 in profit (i.e., after all expenses), while the average sale to a new customer is smaller and nets the company $40 in profit. Delivery of a catalog without a sale will result, of course, in an expense.
+
+a, 4 points) What is the expected overall profit for this company to continue with their traditional plan?
+
+```{r}
+# YOUR ANSWER HERE
+```
+
+The company's data analytics department trained a model to predict (Y/N) who will make a holiday purchase from this catalog resulting in the following confusion matrices:
+
+For existing customers
+	p	n
+Y	4	4
+N	2	90
+
+and
+
+For potential customers
+	p	n
+Y	2	12
+N	0	86
+
+b, 6 points) You are tasked to answer the question of whether the company would make more money this season by only sending catalogs to the prospects that are predicted to purchase. Explain your reasoning by clearly showing your work as well as your final answer.  
+
+```{r}
+# YOUR ANSWER HERE
+```
+
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

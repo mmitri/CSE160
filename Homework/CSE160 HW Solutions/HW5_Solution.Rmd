@@ -1,0 +1,76 @@
+---
+title: "HW6 Solution"
+author: "Eashan Adhikarla"
+date: "8/10/2021"
+output: html_notebook
+---
+
+Load the training set and test
+```{r}
+library(kknn)
+
+# load data
+train <- read.csv('http://www.cse.lehigh.edu/~brian/course/2021/datascience/TitanicTrain.csv')
+test <- read.csv('http://www.cse.lehigh.edu/~brian/course/2021/datascience/TitanicTest.csv')
+
+```
+
+1. Slight data cleaning: age and fare both need a little bit of cleaning.
+```{r}
+
+# remove rows where age and fare are NA
+train <- train[!is.na(train$age),]
+train <- train[!is.na(train$fare),]
+
+test <- test[!is.na(test$age),]
+test <- test[!is.na(test$fare),]
+
+# remove rows where fare is 0
+train<-train[train$fare!=0,]
+test<-test[test$fare!=0,]
+
+# changing survived column to factors. 
+train$sex <- as.factor(train$sex)
+train$pclass <- as.factor(train$pclass)
+train$embarked <- as.factor(train$embarked)
+train$survived <- as.factor(train$survived)
+
+test$sex <- as.factor(test$sex)
+test$pclass <- as.factor(test$pclass)
+test$embarked <- as.factor(test$embarked)
+test$survived <- as.factor(test$survived)
+```
+
+2.Use logistic regression (function: glm)
+```{r}
+# logistic regression
+train.lr <- glm(survived ~ pclass + fare + age + embarked + sex, data=train, family = binomial)
+predict.lr <- predict(train.lr, test)
+data.frame(predict.lr)
+predict.lr <- ifelse(predict.lr > 0.5, 1, 0)
+
+# confusion matrix
+table.lr <- table(test$survived, predict.lr)
+# table.lr
+
+# accuracy
+accuracy.lr <- sum(diag(table.lr)/sum(table.lr))
+accuracy.lr
+```
+
+3.Use k nearest neighbor
+```{r}
+# kknn model
+train.kknn <- kknn(survived ~ pclass + fare + age + embarked + sex, train, test, distance = 3)
+fit<-fitted(train.kknn)
+
+# confusion matrix
+table.kknn <- table(test$survived, fit)
+# table.kknn
+
+# accuracy
+accuracy.kknn <- sum(diag(table.kknn)/sum(table.kknn))
+accuracy.kknn
+```
+Because the accuracy of K nearest neighbor is less than logistic regression(.7407<.75) I would reccomend 
+the linear regression method. 

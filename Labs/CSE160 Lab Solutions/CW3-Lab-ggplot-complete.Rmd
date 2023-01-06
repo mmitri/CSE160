@@ -1,0 +1,210 @@
+---
+title: 'Lab: Getting started with R and ggplot2'
+author: "Brian D. Davison"
+date: "10 July 2022"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+ 
+Try executing a chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+Try clicking Preview to see the rendered version of this document!
+
+---
+
+## 0. A grammar for data graphics
+
+*ggplot2 is the reason I learned R at Facebook!*
+
+ggplot2 is a charting/graphing/plotting system for R
+
+* based on the grammar of graphs
+* handles many of the details automatically
+* http://ggplot2.org/ 
+
+Important ideas:
+
+* An *aesthetic* is a mapping between a variable and the visual cues that represent its values.  
+* A *glyph* is the basic graphical element that represents one item (other terms used include “mark” and “symbol”).
+* The positions of a glyph on the plot—in both the horizontal and vertical senses—are the *visual cues* that help the viewer understand how big the corresponding quantities are. 
+* The *aesthetic* is the mapping that defines these correspondences.
+
+### Getting started
+
+Install ggplot2 (in the Console) as you must do for all contributed packages (just once)
+
+* ```install.packages("ggplot2")```
+
+or better, install the tidyverse library (which includes ggplot2 and other libraries of interest)
+
+* ```install.packages("tidyverse")```
+
+In the rest of the lab, you'll find code blocks (sometimes with code, but most often with instructions beforehand asking you to write some code). Generate the required code, and run all code blocks.
+
+### First code block
+
+In the following code block, use the **library()** function to load the ggplot2 package.
+```{r}
+library(ggplot2)
+```
+
+## 1. Plotting with ggplot - histogram
+
+Let's start by considering plotting a single variable (attribute) of the iris dataset: a histogram.  Run the following code block.  Notice the first line doesn't display anything; it just sets up the plot and stores it in an object.  We need to ask R to evaluate the object in order to see it.
+
+```{r}
+g <- ggplot(data=iris, aes(x=Sepal.Length))
+g + geom_histogram()
+```
+
+In this code block, do the same thing, but with a different attribute (your choice)
+```{r}
+g <- ggplot(data=iris, aes(x=Petal.Width))
+g + geom_histogram()
+```
+
+## 2. Plotting with ggplot - boxplots
+
+There are other kinds of plots to visualize a single variable.
+
+What is a boxplot? The lower and upper hinges correspond to the first and third quartiles (the 25th and 75th percentiles). The upper whisker extends from the hinge to the largest value no further than 1.5 * IQR from the hinge (where IQR is the inter-quartile range, or distance between the first and third quartiles).
+
+In this code block, use the existing object g along with the **geom_boxplot()** call to generate a boxplot.
+```{r}
+g + geom_boxplot()
+```
+
+But a single boxplot is pretty boring; it's more often used for comparisons against other variables.  So in this code block, let's consider the boxplot of each type of iris.  We can do so by generating a new plot (via **ggplot()**), and specifying the x axis as the Species.  Since Species is categorical, we see that ggplot handles categorical variables on an axis quite easily:
+
+```{r}
+g <- ggplot(data=iris, aes(x=Species, y=Sepal.Length))
+g + geom_boxplot()
+```
+
+Also, the dot below the virginica boxplot is a point (an outlier) that lies more than 1.5x the interquartile range (the vertical span of the inner quartiles).
+
+There are other geoms – geometric objects (kinds of plots).  Try the violin plot with **geom_violin()**.  Often it is helpful to draw the quartiles by specifying the markers using **draw_quantiles = c(0.25, 0.5, 0.75)** as a parameter:
+
+```{r}
+#g <- ggplot(data=iris, aes(x=Species, y=Sepal.Length))
+g + geom_violin(draw_quantiles = c(0.25, 0.5, 0.75))
+```
+
+
+## 3. Plotting with ggplot with two aesthetics - a scatterplot
+
+```{r}
+str(iris)
+g <- ggplot(data=iris, aes(x=Sepal.Length, y=Sepal.Width))
+g + geom_point()
+```
+Not all that informative.  But we can color the points by Species (as a third aesthetic).  To do so, specify an aes parameter with **color=Species** (e.g., **aes(color=Species)**).  You can also increase the size of the dots, e.g., **size = 3** as a non-aes parameter in the following code block:
+```{r}
+g + geom_point(aes(color=Species), size = 3)
+```
+Here we see that when considering these two attributes, two species are mixed, and a third  (setosa) is mostly separate.  We will find this kind of insight to be quite valuable when we consider building models of the data.
+
+One can also control the shape of the point (and many other aspects of such plots). Put **shape=Species** as a second parameter of **aes()** to make the point shape another aesthetic:
+```{r}
+g + geom_point(aes(color=Species, shape=Species), size = 3)
+```
+
+We can also transform the default coordinates.  Use the same plot command as above, but lets use **coord_trans(y="log10")** as a third command (i.e., with another **+** ) to build the plot.
+
+```{r}
+g + geom_point(aes(color=Species, shape=Species), size = 3) + coord_trans(y="log10")
+```
+
+Use **geom_text()** to plot text, specifying **label=Species** as the aesthetic in addition to color:
+```{r}
+g + geom_text(aes(color=Species, label=Species))
+```
+
+
+
+
+## 4. CIA World Factbook Data
+
+In this example, we will use a dataset from the **mdsr** package.
+
+```{r}
+library(mdsr)
+countries <- ggplot(data = CIACountries, aes(y = gdp, x = educ))
+countries + geom_point()
+```
+If you want to understand the data further, use the **help()** function on the dataset name.
+
+In the following code block, improve on this plot by:
+- colorizing the points via the **net_users** categorical variable reflecting the fraction of users online)
+- adjusting the size of the points via the **roadways** variable, reflecting the lengths of roads per unit area
+- making the y axis logarithmic (since the points are skewed toward the bottom otherwise)
+- making the axis labels more readable (e.g., "Education Level" and "Gross Domestic Product") using **xlab()** and **ylab()**
+
+```{r}
+countries + geom_point(aes(color=net_users, size=roadways)) + coord_trans(y = "log10") + xlab("Education Level") + ylab("Gross Domestic Product")
+```
+
+
+## 5. Plotting with ggplot - factors
+
+Sometimes it is better to see plots side by side rather than combined.
+
+Facets show the same kind of plot but repeated with different sub-collections of data labeled by levels of a factor.  
+```{r}
+g + geom_point(aes(color=Species), size = 2) + facet_wrap(~Species, nrow = 1)
+```
+
+## 6. Plotting with ggplot - objects
+
+* We've already seen that plots can be stored in objects.  We can add additional layers.
+* In this additional layer, **lm** is an ordinary least squares trendline (which also shows confidence intervals as grey areas).
+```{r}
+g + geom_point(aes(color=Species), size = 3) + facet_wrap(~Species, nrow = 1) + geom_smooth(method="lm")
+```
+
+## 7. Saving plots - ggsave
+
+* Saving your current image is simple - **```ggsave()```**.
+* It detects the desired format based on file extension (e.g., eps, pdf, jpeg, png, svg and more).
+* Use **help(ggsave)** to learn about other options (e.g., output dimensions, dpi, etc.).
+```{r}
+ggsave("FacetsWithTrend.jpg")
+```
+
+
+## 8. Applying facets
+
+Recall your final plot in #4.  Let's ask the question of whether roadway density effectively addresses (i.e., the variable roadways) education level and gross domestic process.  We'll do that by first breaking the values of roadways into a few ranges using **cut()** which generates a factor as a result.  Then we'll use facet_wrap to plot the data from #4 with one facet per roadways range.
+
+First, let's use **cut()** to create a new column called **rfacet** in CIACountries, and ask for six breaks (six ranges).  Then use **table(CIACountries$rfacet)** to see the number of entries per level of the resulting factor.
+
+```{r}
+CIACountries$rfacet <- cut(CIACountries$roadways, 6)
+table(CIACountries$rfacet)
+```
+
+Note that two of the ranges have zero entries, and almost all the entries are in the smallest range.  So apparently **roadways** is squished toward zero just like GDP.  So let's do it again, but this time first apply log to the values of roadways, so that we are calling cut() on the log of the roadways values.
+
+```{r}
+CIACountries$rfacet <- cut(log(CIACountries$roadways), 6)
+table(CIACountries$rfacet)
+```
+
+If you do that, you'll see that there are relatively few entries in the top and bottom ranges, and many more entries toward the middle of the ranges.  This looks useful.
+
+Now let's generate our countries ggplot object again, using the revised CIACountries dataframe.  But when we plot it, use **rfacet** and **facet_wrap()** to generate a facetted plot.
+
+```{r}
+countries <- ggplot(data = CIACountries, aes(y = gdp, x = educ))
+countries + geom_point(aes(color=net_users)) + facet_wrap(~rfacet, nrow = 1) + coord_trans(y = "log10") + xlab("Education Level") + ylab("Gross Domestic Product")
+```
+The resulting plot tells us a few things.  First, not every entry has a **roadways** value -- the NA values have been plotted in a separate facet.  Second, to some extent, the greater the roadways value, the more likely the country will be in the >60% range of internet users, and the less likely to be in the low value ranges of internet users.  Thus, we might find some correlation between **roadways** and **net_users**.  Also with **GDP**.  It is much less clear whether there is a correlation between **roadways** and **education level**.
+
+In this final code block, use the **cor()** function to calculate the pearson correlation coefficient between **roadways** and **gdp** (the largest correlation of the pairs we've mentioned).  Note that there are many NA values, so you'll need to use the **use** option to tell **cor()** how to proceed.
+
+```{r}
+cor(CIACountries$roadways, CIACountries$gdp, use="pairwise.complete.obs")
+```
+
+Turn in the completed lab as CW3.

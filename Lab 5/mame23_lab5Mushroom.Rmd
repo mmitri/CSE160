@@ -1,0 +1,53 @@
+---
+title: "Lab Modeling Mushrooms"
+author: "Mark Mitri"
+date: 21 September 2022
+output: html_notebook
+---
+
+
+The goal for this lab is to become more comfortable with typical R coding tasks for data science modeling.
+
+Put your name at the top as the author of this R notebook.
+
+Start by reading the mushroom data set from http://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data and storing it in a data frame.
+```{r}
+shrooms <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data", sep = ",", header = FALSE)
+shrooms$V17 <- NULL
+shrooms
+```
+
+Sample two-thirds of the data for training, and one-third for testing
+
+```{r}
+shroomSize <- dim(shrooms)[1]
+shroomSample <- sample(1:shroomSize, size=round(shroomSize/3), replace=FALSE, prob=rep(1/shroomSize, shroomSize))
+shroom.train <- shrooms[-shroomSample,]; shroom.test <- shrooms[shroomSample,]
+#shroom.test
+#dim(shroom.train)
+#dim(shroom.test)
+```
+
+Build an rpart decision tree to predict edible mushrooms
+```{r}
+library(rpart)
+shroomTree <- rpart(V1 ~ ., data = shroom.train, method = "class")
+shroomPred <- predict(shroomTree, shroom.test, type = 'class')
+```
+
+Calculate and print accuracy on the test data
+```{r}
+shroomAcc <- mean(shroomPred == shroom.test$V1)
+print(paste('Accuracy of rpart: ', shroomAcc))
+```
+
+Do the same for C5.0.  Which one has better performance on the test data?
+```{r}
+#install.packages("C50")
+library(C50)
+shroom50 <- C5.0(as.factor(V1) ~ ., data=shroom.train, rules = TRUE)
+shroom50pred <- predict(shroom50, newdata = shroom.test, type = 'class')
+shroomTab <- table(data.frame(shroom.test$V1, pred = shroom50pred)); shroomTab
+sum(diag(shroomTab))/sum(shroomTab)
+```
+

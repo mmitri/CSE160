@@ -1,0 +1,133 @@
+---
+title: "HW8"
+author: "Your name"
+date: "today"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+In this question we get experience with Naive Bayes classification in R while implementing cross-validation.  You may use the e1071 package for Naive Bayes that we used in class, but you may not use caret (or any other package that implements cross-validation for you).
+
+Import the data set at this url: http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data 
+
+Simple Description of data:
+
+# #  Attribute                        Domain
+# -- -----------------------------------------
+# 1. Sample code number              id number
+# 2. Clump Thickness                  1 - 10
+# 3. Uniformity of Cell Size          1 - 10
+# 4. Uniformity of Cell Shape         1 - 10
+# 5. Marginal Adhesion                1 - 10
+# 6. Single Epithelial Cell Size      1 - 10
+# 7. Bare Nuclei                      1 - 10
+# 8. Bland Chromatin                  1 - 10
+# 9. Normal Nucleoli                  1 - 10
+# 10. Mitoses                         1 - 10
+# 11. Class:     (2 = benign (negative), 4 = malignant (positive class))
+
+a, 5 points)
+
+Model this dataset using 10-fold cross validation to estimate precision, recall, and accuracy with more confidence. Calculate the performance measures for each fold and then average the measures at the end. Print out the average measures at the end (with labels). Keep in mind that including an id number as a feature does not make sense.  
+
+```{r}
+cancerData <- read.table("http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data", sep=",", na.strings = "?")
+colnames(cancerData) <- c("sampleNumber", "clumpThickness", "cellSize", "cellShape", "marginalAdhesion", "epithelialCellSize", "bareNuclei", "blandChromatin", "normalNucleoli", "mitoses", "class")
+cancerData$sampleNumber <- NULL
+cancerData
+```
+
+```{r}
+library(e1071)
+
+# Shuffle the rows in cancerData
+set.seed(88)
+shuffledData <- cancerData[sample(nrow(cancerData)),]
+
+# Divide dataset by 10 for ten folds, start rowCount counter at 1
+partitionSize <- round(nrow(cancerData)/10) - 1
+rowCount <- 1
+
+# Empty vectors to concatenate performance measures to
+precisionVec <- vector()
+recallVec <- vector()
+fMeasureVec <- vector()
+accuracyVec <- vector()
+
+for (i in 1:10) {
+  # Upperbound is basically rowCount + fold/partition size (Last fold only has 69 rows rather than 70 bc of min())
+  upperBound <- min(rowCount + partitionSize, nrow(shuffledData))
+  testData <- shuffledData[rowCount:upperBound,]
+  trainingData <- shuffledData[-(rowCount:upperBound),]
+  trainingData$class <- as.factor(trainingData$class)
+  
+  #classifier <- naiveBayes(class ~ ., data=trainingData)
+  classifier <- naiveBayes(trainingData[,1:9], trainingData[,10])
+
+  # Do Naive-Bayes modeling
+  pred = predict(classifier, testData, type = "class")
+  tab <- table(pred, testData$class)
+  
+  # Get the performance measures
+  precision <- tab[1,1] / sum(tab[1,]) # Precision = TP / (TP + FP)
+  recall <- tab[1,1] / sum(tab[,1]) # Recall = TP / (TP + FN)
+  fMeasure <- 2 * precision * recall / (precision + recall)
+  accuracy <- sum(diag(tab))/sum(tab)
+  
+  # Concatenate newest values of perf measures
+  precisionVec <- c(precisionVec, precision)
+  recallVec <- c(recallVec, recall)
+  fMeasureVec <- c(fMeasureVec, fMeasure)
+  accuracyVec <- c(accuracyVec, accuracy)
+  
+  # Increment rowCount for next iteration
+  rowCount <- rowCount + partitionSize + 1
+}
+
+meanPrecision = mean(precisionVec)
+meanRecall = mean(recallVec)
+meanFMeasure = mean(fMeasureVec)
+meanAccuracy = mean(accuracyVec)
+
+paste("Precison: " , meanPrecision, ", Recall: ", meanRecall, ", fMeasure: ", meanFMeasure, ", meanAccuracy: ", meanAccuracy)
+```
+
+b, 5 points):
+
+Use a single random split (80% training, 20% testing) data on the same dataset to generate estimated class probabilities for Naive Bayes and for Logistic Regression.  Generate a plot containing both ROC graphs so that classifier performance can be compared.
+
+```{r}
+library(caTools)
+library(ROCR)
+
+set.seed(88) # so that randomized splits are repeatable
+cancerData$class <- as.factor(cancerData$class)
+cleanCancerData <- na.omit(cancerData)
+split <- sample.split(cleanCancerData$class, SplitRatio = 0.8)
+train <- subset(cleanCancerData, split == TRUE)
+test <- subset(cleanCancerData, split == FALSE)
+
+glm.fit <- glm(class ~ ., data = train, family = binomial)
+
+# Use the model to make predictions on the test set
+glm.probs <- predict(glm.fit, newdata=test, type="response")
+
+logisticPredROC <- prediction(glm.probs, test$class)
+logisticPerfROC <- performance(logisticPredROC, 'tpr', 'fpr')
+plot(logisticPerfROC, col=2, text.adj = c(-0.2, 1.7), main="ROC Curve")
+
+classifier <- naiveBayes(class ~., data=train)
+pred = predict(classifier, test, type="raw")
+
+bayesPredROC <- prediction(pred[,2], test$class)
+bayesPerfROC <- performance(bayesPredROC, 'tpr', 'fpr')
+plot(bayesPerfROC, col=3, add=TRUE)
+```
+
+
+3. Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.
+

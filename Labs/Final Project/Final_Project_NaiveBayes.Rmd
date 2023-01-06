@@ -1,0 +1,161 @@
+---
+title: "Final Project Import Data & Cleaning"
+output: html_notebook
+---
+  
+```{r}
+# read a local csv into a variable
+dataset <- read.csv("C:\\Users\\MitriDell\\Documents\\Textbooks\\Senior - Fall 2022\\CSE 160\\Labs\\Final Project\\Traffic_Violations.csv", header = TRUE)
+```
+
+```{r}
+
+# Set all empty cells to NA
+dataset[dataset==""] <- NA
+# Set all State cells that have "XX" to NA
+dataset[dataset=="XX"] <- NA
+# Remove all cells with NA
+dataset<-na.omit(dataset)
+# Remove Latitude and Longitude that are 0
+dataset<-dataset[dataset$Latitude!=0,]
+dataset<-dataset[dataset$Longitude!=0,]
+# Convert True/False to 1/0
+dataset$Contributed.To.Accident <- as.integer(as.logical(dataset$Contributed.To.Accident))
+# Create a new variable for local use and select only the first 100,387 lines (387 to account for the data clean-up to end up with 100,000)
+TrafficViolation <- dataset[1:100387,]
+```
+
+```{r}
+# Convert No/Yes to 0/1
+TrafficViolation$Accident <- as.integer(TrafficViolation$Accident=="YES")
+TrafficViolation$Belts <- as.integer(TrafficViolation$Belts=="YES")
+TrafficViolation$Fatal <- as.integer(TrafficViolation$Fatal=="YES")
+TrafficViolation$Commercial.License <- as.integer(TrafficViolation$Commercial.License=="YES")
+TrafficViolation$HAZMAT <- as.integer(TrafficViolation$HAZMAT=="YES")
+TrafficViolation$Commercial.Vehicle <- as.integer(TrafficViolation$Commercial.Vehicle=="YES")
+TrafficViolation$Alcohol <- as.integer(TrafficViolation$Alcohol=="YES")
+TrafficViolation$Search.Conducted <- as.integer(TrafficViolation$Search.Conducted=="YES")
+TrafficViolation$Work.Zone <- as.integer(TrafficViolation$Work.Zone=="YES")
+TrafficViolation$Personal.Injury <- as.integer(TrafficViolation$Personal.Injury=="YES")
+TrafficViolation$Property.Damage <- as.integer(TrafficViolation$Property.Damage=="YES")
+```
+
+```{r}
+# Naive-Bayes classification on predicting citation
+# based on columns 29-33, using e1071 from HW8
+library(e1071)
+library(dplyr)
+library(ggplot2)
+
+set.seed(88)
+
+# Create another dataframe of just the target and the variables
+naiveViolation <- TrafficViolation[c('Year','Make','Model','Color','Violation.Type')]
+# Convert dataframe to numerical values
+naiveViolation <- data.matrix(naiveViolation)
+# Convert atomic vector to dataframe
+naiveViolation <- as.data.frame(naiveViolation)
+
+ind <- sample(2, nrow(naiveViolation), replace = T, prob = c(0.8, 0.2))
+train <- naiveViolation[ind == 1,]
+test <- naiveViolation[ind == 2,]
+
+model <- naiveBayes(Violation.Type ~ ., data = train, usekernel = T)
+#model
+
+p <- predict(model, test)
+tab <- table(p, test$Violation.Type)
+sum(diag(tab))/sum(tab)
+```
+
+```{r}
+# Naive-Bayes classification on predicting citation
+# based on columns 29-33, using e1071 from HW8
+library(e1071)
+
+set.seed(88)
+
+# Create another dataframe of just the target and the variables
+naiveViolation <- TrafficViolation[c('Year','Make','Model','Color','Violation.Type')]
+# Convert dataframe to numerical values
+naiveViolation <- data.matrix(naiveViolation)
+# Convert atomic vector to dataframe
+naiveViolation <- as.data.frame(naiveViolation)
+
+# Shuffle the rows in TrafficViolation
+shuffledViolation <- naiveViolation[sample(nrow(naiveViolation)),]
+
+# Divide dataset by 10 for ten-folds, start rowCount counter at 1
+partitionSize <- round(nrow(naiveViolation)/10)-1
+rowCount <- 1
+
+# Empty vectors to concatenate performance measures to
+precisionVec <- vector()
+recallVec <- vector()
+fMeasureVec <- vector()
+accuracyVec <- vector()
+
+for (i in 1:10) {
+  upperBound <- min(rowCount + partitionSize, nrow(shuffledViolation))
+  testData <- shuffledViolation[rowCount:upperBound,]
+  trainingData <- shuffledViolation[-(rowCount:upperBound),]
+  trainingData$Violation.Type <- as.factor(trainingData$Violation.Type)
+  
+  #classifier <- naiveBayes(class ~ ., data=trainingData)
+  classifier <- naiveBayes(trainingData[,1:9], trainingData[,10])
+
+  # Do Naive-Bayes modeling
+  pred = predict(classifier, testData, type = "class")
+  tab <- table(pred, testData$class)
+  
+  # Get the performance measures
+  precision <- tab[1,1] / sum(tab[1,]) # Precision = TP / (TP + FP)
+  recall <- tab[1,1] / sum(tab[,1]) # Recall = TP / (TP + FN)
+  fMeasure <- 2 * precision * recall / (precision + recall)
+  accuracy <- sum(diag(tab))/sum(tab)
+  
+  # Concatenate newest values of perf measures
+  precisionVec <- c(precisionVec, precision)
+  recallVec <- c(recallVec, recall)
+  fMeasureVec <- c(fMeasureVec, fMeasure)
+  accuracyVec <- c(accuracyVec, accuracy)
+  
+  # Increment rowCount for next iteration
+  rowCount <- rowCount + partitionSize + 1
+}
+
+meanPrecision = mean(precisionVec)
+meanRecall = mean(recallVec)
+meanFMeasure = mean(fMeasureVec)
+meanAccuracy = mean(accuracyVec)
+
+paste("Precison: " , meanPrecision, ", Recall: ", meanRecall, ", fMeasure: ", meanFMeasure, ", meanAccuracy: ", meanAccuracy)
+```
+
+```{r}
+library(caTools)
+library(ROCR)
+
+set.seed(88) # so that randomized splits are repeatable
+naiveViolation$Violation.Type <- as.factor(naiveViolation$Violation.Type)
+naiveViolation <- na.omit(naiveViolation)
+split <- sample.split(naiveViolation$Violation.Type, SplitRatio = 0.8)
+train <- subset(naiveViolation, split == TRUE)
+test <- subset(naiveViolation, split == FALSE)
+
+glm.fit <- glm(Violation.Type ~ ., data = train, family = binomial)
+
+# Use the model to make predictions on the test set
+glm.probs <- predict(glm.fit, newdata=test, type="response")
+
+logisticPredROC <- prediction(glm.probs, test$Violation.Type)
+logisticPerfROC <- performance(logisticPredROC, 'tpr', 'fpr')
+plot(logisticPerfROC, col=2, text.adj = c(-0.2, 1.7), main="ROC Curve (NB vs. LR)")
+
+classifier <- naiveBayes(Violation.Type ~., data=train)
+pred = predict(classifier, test, type="raw")
+
+bayesPredROC <- prediction(pred[,2], test$Violation.Type)
+bayesPerfROC <- performance(bayesPredROC, 'tpr', 'fpr')
+plot(bayesPerfROC, col=3, add=TRUE)
+```

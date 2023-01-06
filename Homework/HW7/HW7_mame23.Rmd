@@ -1,0 +1,124 @@
+---
+title: "HW7"
+author: "Mark Mitri"
+date: "10/25/2022"
+output: html_notebook
+---
+
+(A total of 10 points.)
+
+Consider a old-fashioned mail-order (only) catalog company that traditionally sends large holiday catalogs to two million past and one million potential customers. This is an expensive process, as the printing and mailing costs \$3 for each catalog, and typically only 6% of existing customers and 2% of potential customers make a purchase. The average sale to an existing customer nets the company \$55 in profit (i.e., after all expenses), while the average sale to a new customer is smaller and nets the company $40 in profit. Delivery of a catalog without a sale will result, of course, in an expense.
+
+a, 4 points) What is the expected overall profit for this company to continue with their traditional plan?
+
+```{r}
+pastCust = 2000000
+potCust = 1000000
+cost = 3
+pastPurchRate = 0.06
+potPurchRate = 0.02
+avgPastProfit = 55
+avgPotProfit = 40
+
+# Expected overall profit = = pR(x) * vR + [1 – pR(x)] * vNR
+
+# First Try - Naive Calculation
+EV1 = (pastPurchRate)*(avgPastProfit) + (potPurchRate)*(avgPotProfit)
+# Second Try - Subtracting the cost per customer from the average Profit
+EV2 = (pastPurchRate)*(avgPastProfit-(pastCust*cost)) + (potPurchRate)*(avgPotProfit-(potCust*cost))
+# Third Try - Multiplying the average profit with the number of customers and then 
+# subtracting the cost per customer from the average Profit
+# I think this is the most accurate?
+EV3 = (pastPurchRate)*((avgPastProfit*pastCust)-(pastCust*cost)) + (potPurchRate)*((avgPotProfit*potCust)-(potCust*cost))
+# Fourth Try - Subtracting the cost of the customer not making a purchase
+EV4 = (pastPurchRate)*((avgPastProfit*pastCust)-(pastCust*cost)) + (potPurchRate)*((avgPotProfit*potCust)-(potCust*cost)) - (1-pastPurchRate)*((avgPastProfit*pastCust)-(pastCust*cost)) + (1-potPurchRate)*((avgPotProfit*potCust)-(potCust*cost))
+# Fifth Try - Naive Calculation * the number of customers
+EV5 = (pastPurchRate)*(avgPastProfit*pastCust) + (potPurchRate)*(avgPotProfit*potCust)
+# Sixth Try - Looking directly at the example of gambling on slides 14
+EV6 = ((pastPurchRate)*((avgPastProfit*pastCust)-(pastCust*cost)) + (potPurchRate)*((avgPotProfit*potCust)-(potCust*cost))) - ((1-pastPurchRate)*(pastCust*cost) + (1-potPurchRate)*(potCust*cost))
+# Seventh Try - Looking directly at the example of online marketing on slides 15
+EV7 = (pastPurchRate * avgPastProfit - (1-pastPurchRate)*cost) + (potPurchRate * avgPotProfit - (1-potPurchRate)*cost)
+# Eighth Try - Looking directly at the example of online marketing on slides 15 multiplying by the number of past and potential customers
+EV8 = pastCust*(pastPurchRate * avgPastProfit - (1-pastPurchRate)*cost) + potCust*(potPurchRate * avgPotProfit - (1-potPurchRate)*cost)
+
+EV2 <- prettyNum(EV2,big.mark=",",scientific=FALSE)
+EV3 <- prettyNum(EV3,big.mark=",",scientific=FALSE)
+EV4 <- prettyNum(EV4,big.mark=",",scientific=FALSE)
+EV5 <- prettyNum(EV5,big.mark=",",scientific=FALSE)
+EV6Pretty <- prettyNum(EV6,big.mark=",",scientific=FALSE)
+EV8 <- prettyNum(EV8,big.mark=",",scientific=FALSE)
+
+expProf <- c(EV1, EV2, EV3, EV4, EV5, EV6Pretty, EV7, EV8)
+rowname <- c("1st Try (looks like a rate)", "2nd Try","3rd Try","4th Try","5th Try","6th Try (The correct Rate)", "7th Try (looks like a rate)", "Eighth Try")
+results <- data.frame(expProf)
+rownames(results) <- rowname
+results
+```
+
+The company's data analytics department trained a model to predict (Y/N) who will make a holiday purchase from this catalog resulting in the following confusion matrices:
+
+For existing customers
+	p	n
+Y	4	4
+N	2	90
+
+and
+
+For potential customers
+	p	n
+Y	2	12
+N	0	86
+
+b, 6 points) You are tasked to answer the question of whether the company would make more money this season by only sending catalogs to the prospects that are predicted to purchase. Explain your reasoning by clearly showing your work as well as your final answer.  
+
+```{r}
+# Existing Customers
+Total = 100
+
+P1 = 6
+probP1 = P1/Total
+tpRate1 = 4/P1
+fnRate1 = 2/P1
+
+N1 = 94
+probN1 = N1/Total
+fpRate1 = 4/N1
+tnRate1 = 90/N1
+
+exProfExistCust = probP1*(tpRate1*55 + fnRate1*0) + probN1*(tnRate1*0 + fpRate1*-3)
+moneyExist <- exProfExistCust*pastCust
+
+# Potential Customers
+P2 = 2
+probP2 = P2/Total
+tpRate2 = 2/P2
+fnRate2 = 0/P2
+
+N2 = 98
+probN2 = N2/Total
+fpRate2 = 12/N2
+tnRate2 = 86/N2
+
+exProfPotCust = probP2*(tpRate2*40 + fnRate2*0) + probN2*(tnRate2*0 + fpRate2*-3)
+moneyPot <- exProfPotCust*potCust
+
+totalMoney = moneyExist + moneyPot
+
+exProfExistCust <- prettyNum(exProfExistCust,big.mark=",",scientific=FALSE)
+exProfPotCust <- prettyNum(exProfPotCust,big.mark=",",scientific=FALSE)
+moneyExist <- prettyNum(moneyExist,big.mark=",",scientific=FALSE)
+moneyPot <- prettyNum(moneyPot,big.mark=",",scientific=FALSE)
+totalMoney <- prettyNum(totalMoney,big.mark=",",scientific=FALSE)
+
+Results <- c(exProfExistCust, exProfPotCust, moneyExist, moneyPot, totalMoney)
+rowname <- c("Expected Rate of Profit for Existing Customers", "Expected Rate of Profit for Potential Customers", "Expected Profit for Existing Customers", "Expected Profit for Potential Customers", "Total Profit for Existing Customers")
+moneyResults <- data.frame(Results)
+rownames(moneyResults) <- rowname
+moneyResults
+```
+
+
+Submission:
+
+- Make sure this notebook is cleanly written so that someone can simply run the whole thing.  Submit this complete notebook via coursesite.
+- Make sure to comment sufficiently that a reader will understand what you are doing.

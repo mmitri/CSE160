@@ -1,0 +1,62 @@
+---
+title: "Lab Modeling Mushrooms"
+author: Brian Davison
+date: 17 July 2022
+output: html_notebook
+---
+
+
+The goal for this lab is to become more comfortable with typical R coding tasks for data science modeling.
+
+Start by reading the mushroom data set from http://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data 
+```{r}
+mushrooms <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data", header=F)
+```
+
+Sample two-thirds of the data for training, and one-third for testing
+
+```{r}
+mushrooms$V17 <- NULL # removed because it was constant, and some kinds of models complain
+
+for (i in 1:ncol(mushrooms)) {
+  mushrooms[[i]] <- factor(mushrooms[[i]])
+}
+
+length <- nrow(mushrooms)
+set.seed(7)  # C5.0 gets 100% accuracy with a seed of 88
+s <- sample(1:length, floor(length/3))
+test <- mushrooms[s,]
+train <- mushrooms[-s,]
+```
+
+Build an rpart decision tree to predict edible mushrooms
+```{r}
+library(rpart)
+tree <- rpart(V1 ~ ., data=train, method="class")
+```
+
+Calculate and print accuracy on the test data
+```{r}
+pred <- predict(tree, test, type="class")
+tab <- table(test$V1, pred)
+tab
+print(paste("Accuracy:", sum(diag(tab)) / sum(tab)))
+```
+
+Do the same for C5.0.  Which one has better performance on the test data?
+```{r}
+
+library(C50)
+tree5 <- C5.0(V1 ~ ., data=train, method="class")
+
+```
+
+```{r}
+pred <- predict(tree5, test, type="class")
+tab <- table(test$V1, pred)
+tab
+print(paste("Accuracy:", sum(diag(tab)) / sum(tab)))
+```
+
+Yes, it may get 100% accurate results on the test data, depending on how the test data was generated.
+

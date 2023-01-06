@@ -1,0 +1,104 @@
+---
+title: "Homework 2"
+output: html_notebook
+author: "Mark Mitri"
+date: 09/5/2022
+---
+
+Instructions: Submit an R notebook that does what each of the following questions requires.
+
+NOTE: Make sure you are submitting the R Notebook, not the HTML file that this would generate.  The file extension will be .Rmd
+
+0) Edit the header of this notebook to include your name and the date. 
+
+1) (2 points)
+
+Replicate the dataframe, icecreamShop, and its structure below using your knowledge of dataframes, row names, and ordered factors and dates.  Your output should exactly match the following two lines of R code.  
+
+> icecreamShop # (LINE 1)
+     firstName     lastName age jobLevel     jobTitle  startDate
+1702    Clutch Mountainhawk  35     boss          CEO 2017-05-19
+1603  Madeline          Doe  26 fulltime   Programmer 2017-05-27
+1604      Abby      Johnson  22 parttime    Secretary 2018-01-02
+1705       Ben        Baker  30 fulltime Business MGR 2017-11-13
+1709 Lafayette      Leopard  23 parttime       Intern 2019-05-29
+
+> str(icecreamShop) # (LINE 2)
+'data.frame':	5 obs. of  6 variables:
+ $ firstName: Factor w/ 5 levels "Abby","Ben","Clutch",..: 3 5 1 2 4
+ $ lastName : Factor w/ 5 levels "Baker","Doe",..: 5 2 3 1 4
+ $ age      : num  35 26 22 30 23
+ $ jobLevel : Ord.factor w/ 3 levels "parttime"<"fulltime"<..: 3 2 1 2 1
+ $ jobTitle : Factor w/ 5 levels "Business MGR",..: 2 4 5 1 3
+ $ startDate: Date, format: "2017-05-19" "2017-05-27" "2018-01-02" ...
+
+```{r}
+
+# your code here
+firstName <- factor(c("Clutch","Madeline","Abby","Ben","Lafayette"))
+lastName <- factor(c("Mountainhawk","Doe","Johnson","Baker","Leopard"))
+age <- c(35,26,22,30,23)
+jobLevel <- factor(c("boss","fulltime","parttime","fulltime","parttime"), ordered = TRUE, levels = c("parttime", "fulltime","boss"))
+jobTitle <- factor(c("CEO", "Programmer","Secretary","Business MGR","Inter"))
+startDate <- as.Date(c("2017-05-19","2017-05-27","2018-01-02","2017-11-13","2019-05-29"))
+icecreamShop <- data.frame(firstName, lastName, age, jobLevel, jobTitle, startDate)
+icecreamShop
+str(icecreamShop)
+
+```
+
+2)  (2 points)
+
+Write code to create a new vector in the same dataframe as question #1 containing the number of years younger each person is than the oldest person in icecreamShop.  That is, the oldest person would have an entry in this vector with the value 0, and everyone younger would have a larger entry value.
+
+```{r}
+
+# your code here
+icecreamShop$Younger <- max(icecreamShop$age) - icecreamShop$age
+str(icecreamShop)
+
+```
+
+
+3) (2 points)
+
+Write an expression (meaning only one line and no semicolons) that counts the number of people in icecreamShop who work full time.  
+
+```{r}
+
+# your code here
+print(sum(icecreamShop$jobLevel=="fulltime"))
+
+```
+
+4) (2 points) 
+
+Write R code to read the table from http://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data and name the dataframe wine, and perform the following actions on that dataframe.
+
+The attributes from the website should be named:
+
+                        ("Class","Alcohol", "Malic.Acid", "Ash", "Alcalinity.of.Ash", "Magnesium", "Total.Phenols", "Flavanoids", "Nonflavanoid.Phenols", "Proanthocyanins", "Color.Intensity", "Hue", "Diluted.Wines.Measure", "Proline") 
+
+```{r}
+
+# your code here
+sdata <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data", header = FALSE, sep = ",")
+colnames(sdata) <- c("Class","Alcohol", "Malic.Acid", "Ash", "Alcalinity.of.Ash", "Magnesium", "Total.Phenols", "Flavanoids", "Nonflavanoid.Phenols", "Proanthocyanins", "Color.Intensity", "Hue", "Diluted.Wines.Measure", "Proline")
+View(sdata)
+
+```
+
+5) (2 points)
+
+From this wine dataframe, determine the average Malic.Acid. Then, specifically using a for loop, print each value of the column that is greater than the average Malic.Acid. 
+```{r}
+
+# your code here
+meanMalic <- mean(sdata$Malic.Acid)
+for(x in sdata$Malic.Acid){
+     if(x > meanMalic){
+         print(x)
+     }
+}
+
+```

@@ -1,0 +1,132 @@
+---
+title: "Final Project Import Data & Cleaning"
+output: html_notebook
+---
+  
+```{r}
+# read a local csv into a variable
+dataset <- read.csv("C:\\Users\\MitriDell\\Documents\\Textbooks\\Senior - Fall 2022\\CSE 160\\Labs\\Final Project\\Traffic_Violations.csv", header = TRUE)
+```
+
+```{r}
+# Create a new variable for local use and select only the first 100,387 lines (387 to account for the data clean-up to end up with 100,000)
+TrafficViolation <- dataset[1:100387,]
+# Set all empty cells to NA
+TrafficViolation[TrafficViolation==""] <- NA
+# Set all State cells that have "XX" to NA
+TrafficViolation[TrafficViolation=="XX"] <- NA
+# Remove all cells with NA
+TrafficViolation<-na.omit(TrafficViolation)
+# Remove Latitude and Longitude that are 0
+TrafficViolation<-TrafficViolation[TrafficViolation$Latitude!=0,]
+TrafficViolation<-TrafficViolation[TrafficViolation$Longitude!=0,]
+# Convert True/False to 1/0
+TrafficViolation$Contributed.To.Accident <- as.integer(as.logical(TrafficViolation$Contributed.To.Accident))
+```
+
+```{r}
+# Convert No/Yes to 0/1
+TrafficViolation$Accident <- as.integer(TrafficViolation$Accident=="YES")
+TrafficViolation$Belts <- as.integer(TrafficViolation$Belts=="YES")
+TrafficViolation$Fatal <- as.integer(TrafficViolation$Fatal=="YES")
+TrafficViolation$Commercial.License <- as.integer(TrafficViolation$Commercial.License=="YES")
+TrafficViolation$HAZMAT <- as.integer(TrafficViolation$HAZMAT=="YES")
+TrafficViolation$Commercial.Vehicle <- as.integer(TrafficViolation$Commercial.Vehicle=="YES")
+TrafficViolation$Alcohol <- as.integer(TrafficViolation$Alcohol=="YES")
+TrafficViolation$Search.Conducted <- as.integer(TrafficViolation$Search.Conducted=="YES")
+TrafficViolation$Work.Zone <- as.integer(TrafficViolation$Work.Zone=="YES")
+TrafficViolation$Personal.Injury <- as.integer(TrafficViolation$Personal.Injury=="YES")
+TrafficViolation$Property.Damage <- as.integer(TrafficViolation$Property.Damage=="YES")
+```
+
+```{r}
+# Naive-Bayes classification on predicting citation
+# based on columns 29-33, using e1071 from HW8
+library(e1071)
+
+set.seed(88)
+
+# Create another dataframe of just the target and the variables
+naiveViolation <- TrafficViolation[c('Year','Make','Model','Color','Violation.Type')]
+# Convert dataframe to numerical values
+naiveViolation <- data.matrix(naiveViolation)
+# Convert atomic vector to dataframe
+naiveViolation <- as.data.frame(naiveViolation)
+
+# Shuffle the rows in TrafficViolation
+shuffledViolation <- naiveViolation[sample(nrow(naiveViolation)),]
+
+# Divide dataset by 10 for ten-folds, start rowCount counter at 1
+partitionSize <- round(nrow(naiveViolation)/10)-1
+rowCount <- 1
+
+# Empty vectors to concatenate performance measures to
+precisionVec <- vector()
+recallVec <- vector()
+fMeasureVec <- vector()
+accuracyVec <- vector()
+
+for (i in 1:10) {
+  upperBound <- min(rowCount + partitionSize, nrow(shuffledData))
+  testData <- shuffledData[rowCount:upperBound,]
+  trainingData <- shuffledData[-(rowCount:upperBound),]
+  trainingData$class <- as.factor(trainingData$class)
+  
+  #classifier <- naiveBayes(class ~ ., data=trainingData)
+  classifier <- naiveBayes(trainingData[,1:9], trainingData[,10])
+
+  # Do Naive-Bayes modeling
+  pred = predict(classifier, testData, type = "class")
+  tab <- table(pred, testData$class)
+  
+  # Get the performance measures
+  precision <- tab[1,1] / sum(tab[1,]) # Precision = TP / (TP + FP)
+  recall <- tab[1,1] / sum(tab[,1]) # Recall = TP / (TP + FN)
+  fMeasure <- 2 * precision * recall / (precision + recall)
+  accuracy <- sum(diag(tab))/sum(tab)
+  
+  # Concatenate newest values of perf measures
+  precisionVec <- c(precisionVec, precision)
+  recallVec <- c(recallVec, recall)
+  fMeasureVec <- c(fMeasureVec, fMeasure)
+  accuracyVec <- c(accuracyVec, accuracy)
+  
+  # Increment rowCount for next iteration
+  rowCount <- rowCount + partitionSize + 1
+}
+
+meanPrecision = mean(precisionVec)
+meanRecall = mean(recallVec)
+meanFMeasure = mean(fMeasureVec)
+meanAccuracy = mean(accuracyVec)
+
+paste("Precison: " , meanPrecision, ", Recall: ", meanRecall, ", fMeasure: ", meanFMeasure, ", meanAccuracy: ", meanAccuracy)
+```
+
+```{r}
+# Naive-Bayes classification on predicting citation
+# based on columns 29-33, using caret
+
+# Spliting the data into train-test with a ratio of 80/20
+split <- sample.split(naiveViolation, SplitRatio = 0.8)
+train_data <- subset(naiveViolation, split == "TRUE")
+test_data <- subset(naiveViolation, split == "FALSE")
+
+# Feature Scaling
+train_scale <- scale(train_data[,1:4])
+test_scale <- scale(test_data[,1:4])
+
+set.seed(88)
+classifier_naive <- naiveBayes(Violation.Type~ ., data = train_data)
+classifier_naive
+
+# Predicting on the test data
+y_pred <- predict(classifier_naive, newdata = test_data)
+
+# Confusion Matrix 
+conf_mat <- table(test_data$Violation.Type,y_pred) 
+print(conf_mat) 
+
+# Model Evauation 
+confusionMatrix(conf_mat) 
+```
